@@ -1,0 +1,10 @@
+syntax: glob
+*~
+dep
+obj
+bin
+GTAGS
+GRTAGS
+GPATH
+syntax: regexp
+(.*/)?\#[^/]*\#$
