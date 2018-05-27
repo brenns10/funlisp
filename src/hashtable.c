@@ -309,6 +309,9 @@ void *ht_get(struct hashtable const *table, void *key)
 void *ht_get_ptr(struct hashtable const *table, void *key)
 {
   void **result = ht_get(table, &key);
+  if (!result) {
+    return NULL;
+  }
   return *result;
 }
 
