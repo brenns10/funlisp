@@ -26,7 +26,7 @@ bin/libfunlisp.a: $(OBJS)
 clean:
 	rm -rf obj/* bin/*
 
-depend: $(SRCS)
+depend: $(SRCS) src/*.h inc/*.h
 	$(CC) $(CFLAGS) -MM obj $(SRCS) | sed 's!^\(.*\):!obj/\1:!' > depend
 
 include depend

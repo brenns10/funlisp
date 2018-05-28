@@ -1,11 +1,11 @@
 /*
- * lisp.h: private lisp declarations
+ * funlisp_internal.h: private lisp declarations
  *
  * Stephen Brennan <stephen@brennan.io>
  */
 
-#ifndef _FUNLISP_H
-#define _FUNLISP_H
+#ifndef _FUNLISP_INTERNAL_H
+#define _FUNLISP_INTERNAL_H
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -18,10 +18,10 @@
 #define GC_QUEUED 'g'
 #define GC_MARKED 'b'
 
-#define LISP_VALUE_HEAD             \
+#define LISP_VALUE_HEAD                 \
 	struct lisp_type  *type;        \
 	struct lisp_value *next;        \
-	char mark                      \
+	char mark                       \
 
 
 /* Type declarations. */

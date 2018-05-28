@@ -5,7 +5,7 @@
  */
 #include <assert.h>
 
-#include "lisp.h"
+#include "funlisp_internal.h"
 
 void lisp_init(lisp_runtime *rt)
 {

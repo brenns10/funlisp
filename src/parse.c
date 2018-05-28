@@ -10,7 +10,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "lisp.h"
+#include "funlisp_internal.h"
 #include "charbuf.h"
 
 typedef struct {

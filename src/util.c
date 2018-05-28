@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "lisp.h"
+#include "funlisp_internal.h"
 #include "hashtable.h"
 
 static lisp_list *lisp_new_pair_list(lisp_runtime *rt, lisp_value *one, lisp_value *two)

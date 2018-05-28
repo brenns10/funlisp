@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "lisp.h"
+#include "funlisp_internal.h"
 #include "iter.h"
 #include "hashtable.h"
 

@@ -1,10 +1,14 @@
 obj/iter.o: src/iter.c src/iter.h
-obj/types.o: src/types.c src/lisp.h src/iter.h src/ringbuf.h src/hashtable.h
+obj/types.o: src/types.c src/funlisp_internal.h src/iter.h src/ringbuf.h \
+ src/hashtable.h
 obj/charbuf.o: src/charbuf.c src/charbuf.h
-obj/util.o: src/util.c src/lisp.h src/iter.h src/ringbuf.h src/hashtable.h
-obj/main.o: src/main.c src/lisp.h src/iter.h src/ringbuf.h src/hashtable.h
-obj/parse.o: src/parse.c src/lisp.h src/iter.h src/ringbuf.h src/hashtable.h \
- src/charbuf.h
+obj/main.o: src/main.c src/funlisp_internal.h src/iter.h src/ringbuf.h \
+ src/hashtable.h
+obj/parse.o: src/parse.c src/funlisp_internal.h src/iter.h src/ringbuf.h \
+ src/hashtable.h src/charbuf.h
+obj/util.o: src/util.c src/funlisp_internal.h src/iter.h src/ringbuf.h \
+ src/hashtable.h
 obj/hashtable.o: src/hashtable.c src/iter.h src/hashtable.h
-obj/gc.o: src/gc.c src/lisp.h src/iter.h src/ringbuf.h src/hashtable.h
+obj/gc.o: src/gc.c src/funlisp_internal.h src/iter.h src/ringbuf.h \
+ src/hashtable.h
 obj/ringbuf.o: src/ringbuf.c src/ringbuf.h
