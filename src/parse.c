@@ -176,6 +176,7 @@ static char *read_file(FILE *input)
 	}
 
 	if (feof(input)) {
+		buf[length] = '\0';
 		return buf;
 	} else {
 		free(buf);
