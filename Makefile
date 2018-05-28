@@ -29,6 +29,9 @@ bin/libfunlisp.a: $(OBJS)
 bin/repl: obj/repl.o bin/libfunlisp.a
 	$(CC) -ledit $^ -o $@
 
+bin/runfile:  obj/runfile.o bin/libfunlisp.a
+	$(CC) $^ -o $@
+
 clean:
 	rm -rf obj/* bin/*
 

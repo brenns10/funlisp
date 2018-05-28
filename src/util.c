@@ -183,6 +183,41 @@ bool lisp_get_args(lisp_list *list, char *format, ...)
 	return true;
 }
 
+lisp_value *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, char can_free)
+{
+	size_t i;
+	lisp_list *rv, *l;
+	lisp_string *s;
+
+	if (n == 0)
+		return lisp_nil_new(rt);
+
+	rv = (lisp_list*) lisp_new(rt, type_list);
+	l = rv;
+
+	for (i = 0; i < n; i++) {
+		s = (lisp_string *) lisp_new(rt, type_string);
+		s->s = list[i];
+		s->can_free = can_free;
+		l->left = (lisp_value *) s;
+
+		l->right = lisp_new(rt, type_list);
+		l = (lisp_list *) l->right;
+	}
+
+	l->right = lisp_nil_new(rt);
+
+	return (lisp_value *) rv;
+}
+
+lisp_value *lisp_singleton_list(lisp_runtime *rt, lisp_value *entry)
+{
+	lisp_list *l = (lisp_list *) lisp_new(rt, type_list);
+	l->left = entry;
+	l->right = lisp_nil_new(rt);
+	return (lisp_value *) l;
+}
+
 static lisp_value *lisp_builtin_eval(lisp_runtime *rt, lisp_scope *scope,
                                      lisp_value *arguments)
 {

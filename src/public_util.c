@@ -36,3 +36,23 @@ lisp_scope *lisp_new_default_scope(lisp_runtime *rt)
 	lisp_scope_populate_builtins(rt, scope);
 	return scope;
 }
+
+lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
+                                    int argc, char **argv)
+{
+	lisp_value *args;
+	lisp_value *main_func = lisp_scope_lookup(
+		rt, scope, lisp_symbol_new(rt, "main"));
+
+	if (main_func->type == type_error) {
+		return NULL;
+	}
+	lisp_print(stdout, main_func);
+
+	args = lisp_list_of_strings(rt, argv, argc, 0);
+	args = lisp_quote(rt, args);
+	args = lisp_singleton_list(rt, args);
+	lisp_print(stdout, args);
+	printf("\n");
+	return lisp_call(rt, scope, main_func, args);
+}

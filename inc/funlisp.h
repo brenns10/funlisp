@@ -75,9 +75,20 @@ void lisp_print(FILE *f, lisp_value *value);
 lisp_value *lisp_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *value);
 
 /*
- * You get lisp_value's by parsing strings (or FILEs, TODO).
+ * You get lisp_value's by parsing strings. This parses exactly one lisp
+ * expression out of a string and returns the code object, which needs to be
+ * evaluated. Will return NULL if there is no expression in the string.
  */
 lisp_value *lisp_parse(lisp_runtime *rt, char *input);
+
+/*
+ * Using files is a bit more straightforward. Loading a file will parse and
+ * execute each expression in the file, returning the result of evaluating the
+ * last expression (which could be NULL if there was no code).  You don't need
+ * to eval the resulting object (it has already been evaluated).  Typically, you
+ * will want to run some callback though (e.g. a main function).
+ */
+lisp_value *lisp_load_file(lisp_runtime *rt, lisp_scope *scope, FILE *input);
 
 /*
  * To do most of this stuff, you need a scope! Thankfully, you can get a new,
@@ -132,5 +143,28 @@ void lisp_mark(lisp_runtime *rt, lisp_value *v);
  * in), sweep everything away!
  */
 void lisp_sweep(lisp_runtime *rt);
+
+
+/* UTILITIES */
+
+/*
+ * Convert the array of strings into a lisp list of string objects.
+ * list: an array of strings
+ * n: length of the array
+ * can_free: Does the interpreter take ownership of the memory pointed at by
+ *   the strings? If so, can_free should be non-zero. If not, it should be 0.
+ */
+lisp_value *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, char can_free);
+
+/*
+ * Given a lisp_value, put it inside a list of size 0 and return it.
+ */
+lisp_value *lisp_singleton_list(lisp_runtime *rt, lisp_value *entry);
+
+/*
+ * Run the main function, if it exists. Otherwise, return NULL.
+ */
+lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
+                                    int argc, char **argv);
 
 #endif

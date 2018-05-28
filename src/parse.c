@@ -160,3 +160,50 @@ lisp_value *lisp_parse(lisp_runtime *rt, char *input)
 {
 	return lisp_parse_value(rt, input, 0).result;
 }
+
+static char *read_file(FILE *input)
+{
+	size_t bufsize = 1024;
+	size_t length = 0;
+	char *buf = malloc(1024);
+
+	while (!feof(input) && !ferror(input)) {
+		length += fread(buf, sizeof(char), bufsize - length, input);
+		if (length >= bufsize) {
+			bufsize *= 2;
+			buf = realloc(buf, bufsize);
+		}
+	}
+
+	if (feof(input)) {
+		return buf;
+	} else {
+		free(buf);
+		return NULL;
+	}
+}
+
+lisp_value *lisp_load_file(lisp_runtime *rt, lisp_scope *scope, FILE *input)
+{
+	char *contents = read_file(input);
+	lisp_value *last_val = NULL;
+	result r;
+	r.index = 0;
+	r.result = NULL;
+
+	if (!contents)
+		return NULL;
+
+	for (;;) {
+		r = lisp_parse_value(rt, contents, r.index);
+		if (!r.result) {
+			lisp_mark(rt, (lisp_value *) scope);
+			if (last_val)
+				lisp_mark(rt, last_val);
+			lisp_sweep(rt);
+			free(contents);
+			return last_val;
+		}
+		last_val = lisp_eval(rt, scope, r.result);
+	}
+}
