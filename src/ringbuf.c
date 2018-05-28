@@ -19,11 +19,12 @@ void rb_destroy(struct ringbuf *rb)
 
 void rb_grow(struct ringbuf *rb)
 {
+	int i;
 	int oldalloc = rb->nalloc;
 	rb->nalloc *= 2;
 	rb->data = realloc(rb->data, rb->nalloc * rb->dsize);
 
-	for (int i = 0; i < rb->count; i++) {
+	for (i = 0; i < rb->count; i++) {
 		int oldindex = (rb->start + i) % oldalloc;
 		int newindex = (rb->start + i) % rb->nalloc;
 		if (oldindex != newindex) {

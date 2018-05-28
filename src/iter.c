@@ -10,7 +10,10 @@
 
 #include "iter.h"
 
-void iterator_close_noop(struct iterator *iter) {}
+void iterator_close_noop(struct iterator *iter)
+{
+	(void)iter;
+}
 
 static bool sv_has_next(struct iterator *iter)
 {

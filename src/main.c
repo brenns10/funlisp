@@ -6,6 +6,8 @@
 
 int main(int argc, char **argv)
 {
+	(void)argc;
+	(void)argv;
 	lisp_runtime rt;
 	lisp_init(&rt);
 	lisp_scope *scope = (lisp_scope*)lisp_new(&rt, type_scope);

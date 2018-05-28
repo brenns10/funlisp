@@ -7,8 +7,8 @@
 
 #include "iter.h"
 
-#ifndef LIBSTEPHEN_HTA_H
-#define LIBSTEPHEN_HTA_H
+#ifndef HASHTABLE_H
+#define HASHTABLE_H
 
 typedef unsigned int (*hash_t)(void *to_hash);
 
@@ -120,4 +120,4 @@ struct iterator ht_iter_keys_ptr(struct hashtable *table);
 struct iterator ht_iter_values(struct hashtable *table);
 struct iterator ht_iter_values_ptr(struct hashtable *table);
 
-#endif // LIBSTEPHEN_HTA_H
+#endif

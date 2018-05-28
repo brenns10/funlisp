@@ -92,6 +92,11 @@ void cb_clear(struct charbuf *obj)
 	obj->length = 0;
 }
 
+/*
+ * These functions use C99 va_copy and vsnprintf, remove them for compatibility.
+ */
+#ifdef CHARBUF_PRINTF
+
 void cb_vprintf(struct charbuf *obj, char *format, va_list va)
 {
 	va_list v2;
@@ -116,3 +121,5 @@ void cb_printf(struct charbuf *obj, char *format, ...)
 	cb_vprintf(obj, format, va);
 	va_end(va);  /* Have to va_stop() it when you're done using it. */
 }
+
+#endif

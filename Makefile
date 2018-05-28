@@ -11,9 +11,7 @@ FLAGS += -g -DDEBUG
 endif
 
 CC=gcc
-#FLAGS=-Wall -Wextra -pedantic
-FLAGS=
-CFLAGS=$(FLAGS) -std=c99 -fPIC -Iinc -c
+CFLAGS= -std=c89 -Wall -Wextra -fPIC -Iinc -c
 SRCS=$(wildcard src/*.c)
 OBJS=$(patsubst src/%.c,obj/%.o,$(SRCS))
 

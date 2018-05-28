@@ -32,7 +32,7 @@
  */
 
 unsigned int ht_primes[] = {
-	31, // 2^5
+	31, /* 2^5 */
 	61,
 	127,
 	257,
@@ -59,7 +59,7 @@ unsigned int ht_primes[] = {
 	536870909,
 	1073741827,
 	2147483647,
-	4294967291 // 2^32
+	4294967291 /* 2^32 */
 };
 
 int binary_search(unsigned int *array, int len, unsigned int value)
@@ -302,7 +302,7 @@ int ht_remove(struct hashtable *table, void *key)
 
 int ht_remove_ptr(struct hashtable *table, void *key)
 {
-	ht_remove(table, &key);
+	return ht_remove(table, &key);
 }
 
 void *ht_get(struct hashtable const *table, void *key)
@@ -391,7 +391,7 @@ static void *ht_next(struct iterator *iter)
 	unsigned int bufidx;
 	int8_t mark = HT_EMPTY;
 
-	for (; mark != HT_FULL && iter->state_int < table->allocated; iter->state_int++) {
+	for (; mark != HT_FULL && iter->state_int < (int)table->allocated; iter->state_int++) {
 		bufidx = convert_idx(table, iter->state_int);
 		mark = HTA_MARK(table, bufidx);
 	}
@@ -417,7 +417,7 @@ static void *ht_next_ptr(struct iterator *iter)
 static bool ht_has_next(struct iterator *iter)
 {
 	struct hashtable *table = iter->ds;
-	return iter->index < table->length;
+	return iter->index < (int)table->length;
 }
 
 struct iterator ht_iter_keys(struct hashtable *table)

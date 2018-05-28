@@ -55,17 +55,17 @@ void lisp_scope_replace_or_insert(lisp_scope *scope, lisp_symbol *key, lisp_valu
 {
 	lisp_scope *s = scope;
 
-	// First go up the chain checking for the name.
+	/* First go up the chain checking for the name.*/
 	while (s) {
 		if (ht_contains_ptr(&s->scope, key)) {
-			// If we find it, replace it.
+			/* If we find it, replace it. */
 			ht_insert_ptr(&s->scope, key, value);
 			return;
 		}
 		s = s->up;
 	}
 
-	// If we never find it, insert it in the "lowest" scope.
+	/* If we never find it, insert it in the "lowest" scope. */
 	ht_insert_ptr(&scope->scope, key, value);
 }
 
@@ -213,7 +213,7 @@ static lisp_value *lisp_builtin_cdr(lisp_runtime *rt, lisp_scope *scope,
 	if (!lisp_get_args(arglist, "l", &firstarg)) {
 		return (lisp_value*) lisp_error_new(rt, "wrong arguments to cdr");
 	}
-	// save rv because firstarg may be deleted after decref
+	/* save rv because firstarg may be deleted after decref */
 	return firstarg->right;
 }
 
@@ -283,7 +283,7 @@ static lisp_value *lisp_builtin_define(lisp_runtime *rt, lisp_scope *scope,
 
 	lisp_value *evald = lisp_eval(rt, scope, expr);
 	lisp_scope_replace_or_insert(scope, s, evald);
-	//lisp_scope_bind(scope, s, evald);
+	/*lisp_scope_bind(scope, s, evald); */
 	return evald;
 }
 
@@ -493,7 +493,7 @@ static lisp_list *get_quoted_left_items(lisp_runtime *rt, lisp_list *list_of_lis
 {
 	lisp_list *left_items = NULL, *rv;
 	while (!lisp_nil_p((lisp_value*)list_of_lists)) {
-		// Create or advance left_items to the next list.
+		/* Create or advance left_items to the next list. */
 		if (left_items == NULL) {
 			left_items = (lisp_list*) lisp_new(rt, type_list);
 			rv = left_items;
@@ -501,11 +501,11 @@ static lisp_list *get_quoted_left_items(lisp_runtime *rt, lisp_list *list_of_lis
 			left_items->right = lisp_new(rt, type_list);
 			left_items = (lisp_list*) left_items->right;
 		}
-		// Check the next node in the list to make sure it's actually a list.
+		/* Check the next node in the list to make sure it's actually a list. */
 		if (lisp_nil_p(list_of_lists->left)) {
 			return NULL;
 		}
-		// Get the next node in the list and get the argument.
+		/* Get the next node in the list and get the argument. */
 		lisp_list *l = (lisp_list*) list_of_lists->left;
 		left_items->left = lisp_quote(rt, l->left);
 		list_of_lists = (lisp_list*) list_of_lists->right;
@@ -518,7 +518,7 @@ static lisp_list *advance_lists(lisp_runtime *rt, lisp_list *list_of_lists)
 {
 	lisp_list *right_items = NULL, *rv;
 	while (!lisp_nil_p((lisp_value*)list_of_lists)) {
-		// Create or advance left_items to the next list.
+		/* Create or advance left_items to the next list. */
 		if (right_items == NULL) {
 			right_items = (lisp_list*) lisp_new(rt, type_list);
 			rv = right_items;
@@ -526,11 +526,11 @@ static lisp_list *advance_lists(lisp_runtime *rt, lisp_list *list_of_lists)
 			right_items->right = lisp_new(rt, type_list);
 			right_items = (lisp_list*) right_items->right;
 		}
-		// Check the next node in the list to make sure it's actually a list.
+		/* Check the next node in the list to make sure it's actually a list. */
 		if (list_of_lists->left->type != type_list) {
 			return NULL;
 		}
-		// Get the next node in the list and get the argument.
+		/* Get the next node in the list and get the argument. */
 		lisp_list *l = (lisp_list*) list_of_lists->left;
 		right_items->left = l->right;
 		list_of_lists = (lisp_list*) list_of_lists->right;
@@ -546,7 +546,7 @@ static lisp_value *lisp_builtin_map(lisp_runtime *rt, lisp_scope *scope,
 	lisp_list *ret = NULL, *args, *rv;
 	lisp_list *map_args = (lisp_list *) lisp_eval_list(rt, scope, a);
 
-	// Get the function from the first argument in the list.
+	/* Get the function from the first argument in the list. */
 	f = map_args->left;
 	if (map_args->right->type != type_list) {
 		return (lisp_value*) lisp_error_new(rt, "need at least two arguments");
@@ -583,7 +583,7 @@ static lisp_value *lisp_builtin_reduce(lisp_runtime *rt, lisp_scope *scope, lisp
 		}
 		initializer = list->left;
 		list = (lisp_list*)list->right;
- } else if (length == 3) {
+	} else if (length == 3) {
 		if (!lisp_get_args(args, "**l", &callable, &initializer, &list)) {
 			return (lisp_value*) lisp_error_new(rt, "reduce: callable, initializer, and list required");
 		}

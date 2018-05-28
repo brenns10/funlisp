@@ -19,11 +19,9 @@
 #define GC_MARKED 'b'
 
 #define LISP_VALUE_HEAD             \
-	struct {                          \
-		struct lisp_type  *type;        \
-		struct lisp_value *next;        \
-		char mark;                      \
-	}
+	struct lisp_type  *type;        \
+	struct lisp_value *next;        \
+	char mark                      \
 
 
 /* Type declarations. */

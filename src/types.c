@@ -282,7 +282,6 @@ static void symbol_print(FILE *f, lisp_value *v);
 static lisp_value *symbol_new(void);
 static lisp_value *symbol_eval(lisp_runtime*, lisp_scope*, lisp_value*);
 static void symbol_free(void *v);
-static struct iterator symbol_expand(lisp_value*v);
 
 static lisp_type type_symbol_obj = {
 	.type=&type_type_obj,
@@ -397,7 +396,7 @@ static lisp_value *integer_new(void)
 	return (lisp_value*)integer;
 }
 
-// string
+/* string */
 
 static void string_print(FILE *f, lisp_value *v);
 static lisp_value *string_new(void);

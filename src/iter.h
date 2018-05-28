@@ -10,7 +10,7 @@
 
 struct iterator {
 	void *ds;        /* the container data structure */
-	size_t index;    /* zero-based index for the iterator */
+	int index;    /* zero-based index for the iterator */
 	int state_int;   /* some state variables that may help */
 	void *state_ptr;
 
