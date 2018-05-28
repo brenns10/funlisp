@@ -637,6 +637,19 @@ static lisp_value *lisp_builtin_reduce(lisp_runtime *rt, lisp_scope *scope, lisp
 	return initializer;
 }
 
+static lisp_value *lisp_builtin_print(lisp_runtime *rt, lisp_scope *scope, lisp_value *a)
+{
+	lisp_value *v;
+	lisp_list *args = (lisp_list*) lisp_eval_list(rt, scope, a);
+
+	if (!lisp_get_args(args, "*", &v)) {
+		return (lisp_value*) lisp_error_new(rt, "expected one argument");
+	}
+
+	lisp_print(stdout, v);
+	return v;
+}
+
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
 	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval);
@@ -660,4 +673,5 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "null?", lisp_builtin_null_p);
 	lisp_scope_add_builtin(rt, scope, "map", lisp_builtin_map);
 	lisp_scope_add_builtin(rt, scope, "reduce", lisp_builtin_reduce);
+	lisp_scope_add_builtin(rt, scope, "print", lisp_builtin_print);
 }
