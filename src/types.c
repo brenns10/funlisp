@@ -424,13 +424,15 @@ static lisp_value *string_new(void)
 {
 	lisp_string *str = malloc(sizeof(lisp_string));
 	str->s = NULL;
+	str->can_free = 1;
 	return (lisp_value*)str;
 }
 
 static void string_free(void *v)
 {
 	lisp_string *str = (lisp_string*) v;
-	free(str->s);
+	if (str->can_free)
+		free(str->s);
 	free(str);
 }
 

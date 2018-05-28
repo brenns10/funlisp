@@ -81,6 +81,7 @@ struct lisp_integer {
 
 struct lisp_string {
 	LISP_VALUE_HEAD;
+	char can_free;
 	char *s;
 };
 
