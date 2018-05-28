@@ -305,6 +305,7 @@ static lisp_value *symbol_new(void)
 {
 	lisp_symbol *symbol = malloc(sizeof(lisp_symbol));
 	symbol->sym = NULL;
+	symbol->can_free = 1;
 	return (lisp_value*)symbol;
 }
 
@@ -319,7 +320,8 @@ static lisp_value *symbol_eval(lisp_runtime *rt, lisp_scope *scope,
 static void symbol_free(void *v)
 {
 	lisp_symbol *symbol = (lisp_symbol*) v;
-	free(symbol->sym);
+	if (symbol->can_free)
+		free(symbol->sym);
 	free(symbol);
 }
 

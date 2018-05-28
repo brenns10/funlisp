@@ -66,6 +66,7 @@ struct lisp_type {
 
 struct lisp_symbol {
 	LISP_VALUE_HEAD;
+	char can_free;
 	char *sym;
 };
 
