@@ -647,6 +647,7 @@ static lisp_value *lisp_builtin_print(lisp_runtime *rt, lisp_scope *scope, lisp_
 	}
 
 	lisp_print(stdout, v);
+	printf("\n");
 	return v;
 }
 
