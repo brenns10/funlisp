@@ -620,7 +620,7 @@ static lisp_value *lisp_builtin_print(lisp_runtime *rt, lisp_scope *scope, lisp_
 
 	lisp_print(stdout, v);
 	printf("\n");
-	return v;
+	return lisp_nil_new(rt);
 }
 
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
