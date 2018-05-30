@@ -15,6 +15,7 @@ well as those looking to embed and extend it.
   language.rst
   embedding.rst
   api.rst
+  advanced.rst
 
 
 Indices and tables

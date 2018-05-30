@@ -39,7 +39,8 @@ bin/call_lisp: obj/call_lisp.o bin/libfunlisp.a
 	$(CC) $^ -o $@
 
 clean:
-	rm -rf obj/* bin/*
+	rm -rf obj/* bin/* doc/xml
+	make -C doc clean
 
 doc:
 	doxygen
