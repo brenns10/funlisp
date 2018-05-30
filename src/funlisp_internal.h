@@ -110,24 +110,4 @@ lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope, lisp_value *callable,
                       lisp_value *arguments);
 lisp_value *lisp_new(lisp_runtime *rt, lisp_type *typ);
 
-/* Shortcuts for creation of objects */
-lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *string);
-lisp_error *lisp_error_new(lisp_runtime *rt, char *message);
-lisp_builtin *lisp_builtin_new(lisp_runtime *rt, char *name,
-                               lisp_builtin_func call);
-lisp_value *lisp_nil_new(lisp_runtime *rt);
-
-/* Helper functions */
-void lisp_scope_bind(lisp_scope *scope, lisp_symbol *symbol, lisp_value *value);
-lisp_value *lisp_scope_lookup(lisp_runtime *rt, lisp_scope *scope,
-                              lisp_symbol *symbol);
-void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name, lisp_builtin_func call);
-void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope);
-lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *list);
-bool lisp_get_args(lisp_list *list, char *format, ...);
-lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value);
-/* List functions */
-int lisp_list_length(lisp_list *list);
-bool lisp_nil_p(lisp_value *l);
-
 #endif

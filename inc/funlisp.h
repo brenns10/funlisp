@@ -81,6 +81,9 @@ lisp_value *lisp_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *value);
  */
 lisp_value *lisp_parse(lisp_runtime *rt, char *input);
 
+lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope, lisp_value *callable,
+                      lisp_value *arguments);
+
 /*
  * Using files is a bit more straightforward. Loading a file will parse and
  * execute each expression in the file, returning the result of evaluating the
@@ -166,5 +169,43 @@ lisp_value *lisp_singleton_list(lisp_runtime *rt, lisp_value *entry);
  */
 lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
                                     int argc, char **argv);
+
+typedef lisp_value * (*lisp_builtin_func)(lisp_runtime*, lisp_scope*,lisp_value*);
+
+/* Helper functions */
+void lisp_scope_bind(lisp_scope *scope, lisp_symbol *symbol, lisp_value *value);
+lisp_value *lisp_scope_lookup(lisp_runtime *rt, lisp_scope *scope,
+                              lisp_symbol *symbol);
+lisp_value *lisp_scope_lookup_string(lisp_runtime *rt, lisp_scope *scope, char *name);
+void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name, lisp_builtin_func call);
+void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope);
+lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *list);
+int lisp_get_args(lisp_list *list, char *format, ...);
+lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value);
+/* List functions */
+int lisp_list_length(lisp_list *list);
+int lisp_nil_p(lisp_value *l);
+
+/* type creation and accessing */
+lisp_string *lisp_string_new_unowned(lisp_runtime *rt, char *str);
+lisp_string *lisp_string_new(lisp_runtime *rt, char *str);
+char *lisp_string_get(lisp_string *s);
+
+lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *string);
+char *lisp_symbol_get(lisp_symbol *);
+
+lisp_error  *lisp_error_new(lisp_runtime *rt, char *message);
+char *lisp_error_get(lisp_error *);
+
+lisp_list *lisp_list_new(lisp_runtime *rt, lisp_value *left, lisp_value *right);
+lisp_value *lisp_list_get_left(lisp_list *);
+lisp_value *lisp_list_get_right(lisp_list *);
+
+lisp_integer *lisp_integer_new(lisp_runtime *rt, int n);
+int lisp_integer_get(lisp_integer *integer);
+
+lisp_builtin *lisp_builtin_new(lisp_runtime *rt, char *name,
+                               lisp_builtin_func call);
+lisp_value *lisp_nil_new(lisp_runtime *rt);
 
 #endif

@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <funlisp.h>
+#include "funlisp.h"
 
 
 int main(int argc, char **argv)

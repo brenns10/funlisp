@@ -230,7 +230,7 @@ static lisp_value *list_new(void)
 	return (lisp_value*) list;
 }
 
-bool lisp_nil_p(lisp_value *l)
+int lisp_nil_p(lisp_value *l)
 {
 	return (l->type == type_list) &&
 		(((lisp_list*)l)->right == NULL) &&

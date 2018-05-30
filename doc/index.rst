@@ -12,8 +12,9 @@ well as those looking to embed and extend it.
   :maxdepth: 2
   :caption: Contents:
 
-  language/index.rst
-  embedding/index.rst
+  language.rst
+  embedding.rst
+  api.rst
 
 
 Indices and tables

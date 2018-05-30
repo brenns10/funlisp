@@ -8,6 +8,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "funlisp_internal.h"
 
@@ -52,4 +53,104 @@ lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
 	args = lisp_quote(rt, args);
 	args = lisp_singleton_list(rt, args);
 	return lisp_call(rt, scope, main_func, args);
+}
+
+lisp_builtin *lisp_builtin_new(lisp_runtime *rt, char *name,
+                               lisp_builtin_func call)
+{
+	lisp_builtin *builtin = (lisp_builtin*)lisp_new(rt, type_builtin);
+	builtin->call = call;
+	builtin->name = name;
+	return builtin;
+}
+
+lisp_value *lisp_nil_new(lisp_runtime *rt)
+{
+	if (rt->nil == NULL) {
+		rt->nil = lisp_new(rt, type_list);
+	}
+	return rt->nil;
+}
+
+static char *strdup(char *s)
+{
+	int len = strlen(s);
+	char *new = malloc(len + 1);
+	strncpy(new, s, len);
+	new[len] = '\0';
+	return new;
+}
+
+lisp_string *lisp_string_new_unowned(lisp_runtime *rt, char *str)
+{
+	lisp_string *string = (lisp_string *) lisp_new(rt, type_string);
+	string->s = str;
+	string->can_free = 0;
+	return string;
+}
+
+lisp_string *lisp_string_new(lisp_runtime *rt, char *str)
+{
+	lisp_string *string = (lisp_string *) lisp_new(rt, type_string);
+	string->s = strdup(str);
+	return string;
+}
+
+char *lisp_string_get(lisp_string *s)
+{
+	return s->s;
+}
+
+lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *sym)
+{
+	lisp_symbol *err = (lisp_symbol*)lisp_new(rt, type_symbol);
+	err->sym = strdup(sym);
+	return err;
+}
+
+char *lisp_symbol_get(lisp_symbol *sym)
+{
+	return sym->sym;
+}
+
+lisp_error *lisp_error_new(lisp_runtime *rt, char *message)
+{
+	lisp_error *err = (lisp_error*)lisp_new(rt, type_error);
+	err->message = strdup(message);
+	return err;
+}
+
+char *lisp_error_get(lisp_error *err)
+{
+	return err->message;
+}
+
+lisp_list *lisp_list_new(lisp_runtime *rt, lisp_value *left, lisp_value *right)
+{
+	lisp_list *l = (lisp_list *) lisp_new(rt, type_list);
+	l->left = left;
+	l->right = right;
+	return l;
+}
+
+lisp_value *lisp_list_get_left(lisp_list *l)
+{
+	return l->left;
+}
+
+lisp_value *lisp_list_get_right(lisp_list *l)
+{
+	return l->right;
+}
+
+lisp_integer *lisp_integer_new(lisp_runtime *rt, int n)
+{
+	lisp_integer *integer = (lisp_integer *) lisp_new(rt, type_integer);
+	integer->x = n;
+	return integer;
+}
+
+int lisp_integer_get(lisp_integer *integer)
+{
+	return integer->x;
 }

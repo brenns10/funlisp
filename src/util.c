@@ -43,6 +43,15 @@ lisp_value *lisp_scope_lookup(lisp_runtime *rt, lisp_scope *scope,
 	}
 }
 
+lisp_value *lisp_scope_lookup_string(lisp_runtime *rt, lisp_scope *scope, char *name)
+{
+	/* a dirty hack but why allocate here? */
+	lisp_symbol symbol;
+	symbol.type = type_symbol;
+	symbol.sym = name;
+	return lisp_scope_lookup(rt, scope, &symbol);
+}
+
 void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
                             lisp_builtin_func call)
 {
@@ -67,43 +76,6 @@ void lisp_scope_replace_or_insert(lisp_scope *scope, lisp_symbol *key, lisp_valu
 
 	/* If we never find it, insert it in the "lowest" scope. */
 	ht_insert_ptr(&scope->scope, key, value);
-}
-
-lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *sym)
-{
-	lisp_symbol *err = (lisp_symbol*)lisp_new(rt, type_symbol);
-	int len = strlen(sym);
-	err->sym = malloc(len + 1);
-	strncpy(err->sym, sym, len);
-	err->sym[len] = '\0';
-	return err;
-}
-
-lisp_error *lisp_error_new(lisp_runtime *rt, char *message)
-{
-	lisp_error *err = (lisp_error*)lisp_new(rt, type_error);
-	int len = strlen(message);
-	err->message = malloc(len + 1);
-	strncpy(err->message, message, len);
-	err->message[len] = '\0';
-	return err;
-}
-
-lisp_builtin *lisp_builtin_new(lisp_runtime *rt, char *name,
-                               lisp_builtin_func call)
-{
-	lisp_builtin *builtin = (lisp_builtin*)lisp_new(rt, type_builtin);
-	builtin->call = call;
-	builtin->name = name;
-	return builtin;
-}
-
-lisp_value *lisp_nil_new(lisp_runtime *rt)
-{
-	if (rt->nil == NULL) {
-		rt->nil = lisp_new(rt, type_list);
-	}
-	return rt->nil;
 }
 
 lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *l)
@@ -162,7 +134,7 @@ static lisp_type *lisp_get_type(char c)
 	return NULL;
 }
 
-bool lisp_get_args(lisp_list *list, char *format, ...)
+int lisp_get_args(lisp_list *list, char *format, ...)
 {
 	va_list va;
 	va_start(va, format);
@@ -170,7 +142,7 @@ bool lisp_get_args(lisp_list *list, char *format, ...)
 	while (!lisp_nil_p((lisp_value*)list) && *format != '\0') {
 		lisp_type *type = lisp_get_type(*format);
 		if (type != NULL && type != list->left->type) {
-			return false;
+			return 0;
 		}
 		v = va_arg(va, lisp_value**);
 		*v = list->left;
@@ -178,9 +150,9 @@ bool lisp_get_args(lisp_list *list, char *format, ...)
 		format += 1;
 	}
 	if (strlen(format) != 0 || !lisp_nil_p((lisp_value*)list)) {
-		return false;
+		return 0;
 	}
-	return true;
+	return 1;
 }
 
 lisp_value *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, char can_free)

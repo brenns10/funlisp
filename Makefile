@@ -29,7 +29,13 @@ bin/libfunlisp.a: $(OBJS)
 bin/repl: obj/repl.o bin/libfunlisp.a
 	$(CC) -ledit $^ -o $@
 
+bin/hello_repl: obj/hello_repl.o bin/libfunlisp.a
+	$(CC) -ledit $^ -o $@
+
 bin/runfile:  obj/runfile.o bin/libfunlisp.a
+	$(CC) $^ -o $@
+
+bin/call_lisp: obj/call_lisp.o bin/libfunlisp.a
 	$(CC) $^ -o $@
 
 clean:
