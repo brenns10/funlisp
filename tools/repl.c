@@ -20,12 +20,13 @@ int main(int argc, char **argv)
 
 	for (;;) {
 		char *input = readline("> ");
-		if (input == NULL) {
-			break;
-		}
+		if (input == NULL)
+			break; /* Ctrl-D, EOF */
 		lisp_value *value = lisp_parse(rt, input);
 		add_history(input);
 		free(input);
+		if (!value)
+			continue; /* blank line */
 		lisp_value *result = lisp_eval(rt, scope, value);
 		lisp_print(stdout, result);
 		fprintf(stdout, "\n");
