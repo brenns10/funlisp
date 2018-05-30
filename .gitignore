@@ -6,5 +6,7 @@ bin
 GTAGS
 GRTAGS
 GPATH
+doc/_build
+doc/xml
 syntax: regexp
 (.*/)?\#[^/]*\#$

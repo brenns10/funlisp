@@ -2,7 +2,7 @@
 #
 # Stephen Brennan <stephen@brennan.io>
 
-.PHONY: all clean
+.PHONY: all clean doc
 
 CC=gcc
 CFLAGS= -std=c89 -Wall -Wextra -fPIC -Iinc -c
@@ -34,6 +34,11 @@ bin/runfile:  obj/runfile.o bin/libfunlisp.a
 
 clean:
 	rm -rf obj/* bin/*
+
+doc:
+	doxygen
+	make -C doc html
+
 
 depend: $(SRCS) src/*.h inc/*.h tools/*.c
 	$(CC) $(CFLAGS) -MM obj $(SRCS) | sed 's!^\(.*\):!obj/\1:!' > depend
