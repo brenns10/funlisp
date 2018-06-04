@@ -312,15 +312,105 @@ lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
  */
 typedef lisp_value * (*lisp_builtin_func)(lisp_runtime*, lisp_scope*,lisp_value*);
 
-/* Helper functions */
+/**
+ * Bind a symbol to a value in a scope.
+ * @param scope scope to define the name in
+ * @param symbol symbol that is the name
+ * @param value what the symbol is bound to
+ */
 void lisp_scope_bind(lisp_scope *scope, lisp_symbol *symbol, lisp_value *value);
+
+/**
+ * Look up a symbol within a scope. If it is not found in this scope, look
+ * within the parent scope etc, until it is found. If it is not found at all,
+ * return a lisp_error object.
+ * @param rt runtime
+ * @param scope scope to look in
+ * @param symbol symbol to look up
+ * @return value found, or a lisp_error when not found
+ */
 lisp_value *lisp_scope_lookup(lisp_runtime *rt, lisp_scope *scope,
                               lisp_symbol *symbol);
+/**
+ * Lookup a name within a scope, without creating a symbol object. Behaves the
+ * same as lisp_scope_lookup().
+ * @param rt runtime
+ * @param scope scope to look in
+ * @param name string name to look up
+ * @return value found, or a lisp_error when not found
+ */
 lisp_value *lisp_scope_lookup_string(lisp_runtime *rt, lisp_scope *scope, char *name);
+
+/**
+ * Shortcut to declare a builtin function. Simply takes a function pointer and a
+ * string name, and it will internally create the lisp_builtin object with the
+ * correct name, and bind it in the given scope.
+ * @param rt runtime
+ * @param scope scope to bind builtin in
+ * @param name name of builtin
+ * @param call function pointer defining the builtin
+ */
 void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name, lisp_builtin_func call);
+
+/**
+ * Add all language defaults to a scope. This is critical for the language work,
+ * at all, since most language elements are implemented as builtin functions.
+ * @param rt runtime
+ * @param scope scope to add builtins too
+ */
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope);
+
+/**
+ * Given a list of arguments, evaluate each of them within a scope and return a
+ * new list containing the evaluated arguments. This is most useful for
+ * implementing builtin functions.
+ * @param rt runtime
+ * @param scope scope to evaluate within
+ * @param list list of un-evaluated function arguments
+ * @return list of evaluated function arguments
+ */
 lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *list);
+
+/**
+ * Given a list of function arguments, perform type checking and verify the
+ * number of arguments according to a format string. The following formats are
+ * recognized:
+ *
+ *     d - integer
+ *     l - list
+ *     s - symbol
+ *     S - string
+ *     o - scope
+ *     e - error
+ *     b - builtin
+ *     t - type
+ *     * - anything
+ *
+ * As an example, a function which takes an integer and a string, and prints the
+ * string N times, might use the format string ``dS``.
+ *
+ * The remaining variadic arguments are pointers to object pointers, and they
+ * will be assigned as each argument is parsed. EG:
+ *
+ *     lisp_integer *arg1;
+ *     lisp_string *arg2;
+ *     lisp_get_args(args, "dS", &arg1, &arg2);
+ *
+ * @param list Argument list to type check and count
+ * @param format Format string
+ * @param ... Destination pointer to place results
+ * @retval 1 on success (true)
+ * @retval 0 on failure (false)
+ */
 int lisp_get_args(lisp_list *list, char *format, ...);
+
+/**
+ * Return value, but inside a list containing the symbol ``quote``. When this
+ * evaluated, it will return its contents (``value``) un-evaluated.
+ * @param rt runtime
+ * @param value value to return quoted
+ * @return value but quoted
+ */
 lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value);
 /* List functions */
 int lisp_list_length(lisp_list *list);
