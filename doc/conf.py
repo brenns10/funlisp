@@ -6,6 +6,12 @@
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
 
+import subprocess, os
+
+read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
+if read_the_docs_build:
+    subprocess.call('cd ../doxygen; doxygen', shell=True)
+
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
