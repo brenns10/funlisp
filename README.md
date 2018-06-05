@@ -13,7 +13,8 @@ well documented, and easy to embed and use.  This implementation is derived from
 
 Since funlisp is aimed at being easily embeddable, the [tools/](tools/)
 directory is full of sample programs using the library. You can also check out
-the [documentation](doc/index.rst).
+the documentation on [Read The Docs](https://funlisp.readthedocs.io) or within
+the [source](doc/index.rst).
 
 There are sample scripts within [scripts/](scripts/). You can run them with:
 
