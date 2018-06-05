@@ -412,21 +412,106 @@ int lisp_get_args(lisp_list *list, char *format, ...);
  * @return value but quoted
  */
 lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value);
-/* List functions */
+
+/**
+ * Return the length of a list.
+ * @param list list to find the length of
+ * @return length of the list
+ */
 int lisp_list_length(lisp_list *list);
+
+/**
+ * Return true if the lisp_value is "nil" (an empty list).
+ * @param l value to check
+ * @retval 1 (true) if l is nil
+ * @retval 0 (false) if l is non-nil
+ */
 int lisp_nil_p(lisp_value *l);
 
-/* type creation and accessing */
+/**
+ * Return a new, "un-owned" string. "Un-owned" means that ``str`` will not be
+ * freed when the lisp_string is garbage collected. However, the lisp_string
+ * will still contain the exact reference to ``str``, not a copy. So, your
+ * application **must not** free ``str`` until the lisp_string containing it is
+ * garbage collected. The safest approach here is if you are certain that your
+ * string will not be freed until after the lisp_runtime is freed.
+ *
+ * @code
+ *     lisp_value *v = (lisp_string *) lisp_string_new_unowned(rt, "hello");
+ * @endcode
+ *
+ * @note This is the ideal function to use with string literals, since they are
+ * statically allocated.
+ * @param rt runtime
+ * @param str string which will not be freed by the garbage collector
+ * @return lisp_string object pointing to your string
+ */
 lisp_string *lisp_string_new_unowned(lisp_runtime *rt, char *str);
+
+/**
+ * Return a new string. This function takes a "safe" approach, by copying your
+ * string and using the copy. The pointer will be owned by the interpreter and
+ * freed when the lisp_string object is garbage collected. This is roughly
+ * equivalent to duplicating the string using strdup(), and then creating a new
+ * owned string with that pointer.
+ * @note This is also safe to use with string literals, but it is not the most
+ * efficient way, since the string gets copied.
+ * @param rt runtime
+ * @param str string to copy and use in an owned string
+ * @return a new lisp_string
+ */
 lisp_string *lisp_string_new(lisp_runtime *rt, char *str);
+
+/**
+ * Return a pointer to the string contained within a lisp_string. The
+ * application must **not** modify or free the string.
+ * @param s the lisp string to access
+ * @return the contained string
+ */
 char *lisp_string_get(lisp_string *s);
 
+/**
+ * Return a new symbol. This function will copy the ``string`` and free the copy
+ * it on garbage collection (much like lisp_string_new()).
+ * @param rt runtime
+ * @param string the symbol to create
+ * @return the resulting symbol
+ */
 lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *string);
-char *lisp_symbol_get(lisp_symbol *);
 
+/**
+ * Return the string contained in the symbol.
+ * @param s the symbol to retrieve the string from
+ * @return the string contained in the symbol
+ */
+char *lisp_symbol_get(lisp_symbol *s);
+
+/**
+ * Return a new error. This function will copy the ``message`` and free the copy
+ * on garbage collection (much like lisp_string_new()).
+ * @param rt runtime
+ * @param message message to use for creating the error
+ * @return a new error
+ */
 lisp_error  *lisp_error_new(lisp_runtime *rt, char *message);
-char *lisp_error_get(lisp_error *);
 
+/**
+ * Return the message from an error.
+ * @param e the error to retrieve the message from
+ * @return the message contained in the error
+ */
+char *lisp_error_get(lisp_error *e);
+
+/**
+ * Create a new list node with left and right value already specified. This
+ * interface only allows you to create lists from end to beginning.
+ * @param rt runtime
+ * @param left item to go on the left side of the s-expression, usually a list
+ * item
+ * @param right item to go on the right side of the s-expression, usually the
+ * next lisp_list instance
+ * @return newly allocated lisp_list
+ */
 lisp_list *lisp_list_new(lisp_runtime *rt, lisp_value *left, lisp_value *right);
 lisp_value *lisp_list_get_left(lisp_list *);
 lisp_value *lisp_list_get_right(lisp_list *);
