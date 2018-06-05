@@ -34,7 +34,7 @@ lisp_runtime *lisp_runtime_new(void);
 void lisp_runtime_free(lisp_runtime *rt);
 
 /**
- * In funlisp, (almost) everything is a lisp_value -- that is, it can be cast to
+ * In funlisp, (almost) everything is a lisp_value. That is, it can be cast to
  * a ``lisp_value *`` and operated on. Integers, Strings, Code, etc. The only
  * thing which is not a lisp_value is the lisp_runtime.
  */
@@ -276,6 +276,7 @@ void lisp_sweep(lisp_runtime *rt);
 
 /**
  * Convert the array of strings into a lisp list of string objects.
+ * @param rt runtime
  * @param list an array of strings
  * @param n length of the array
  * @param can_free Does the interpreter take ownership of the memory pointed at
@@ -513,14 +514,59 @@ char *lisp_error_get(lisp_error *e);
  * @return newly allocated lisp_list
  */
 lisp_list *lisp_list_new(lisp_runtime *rt, lisp_value *left, lisp_value *right);
-lisp_value *lisp_list_get_left(lisp_list *);
-lisp_value *lisp_list_get_right(lisp_list *);
 
+/**
+ * Retrieve the left item of a list node / sexp.
+ * @param l list to retrieve from
+ * @return left item of list node
+ */
+lisp_value *lisp_list_get_left(lisp_list *l);
+
+/**
+ * Retrieve the right item of a list node / sexp
+ * @param l list to retrieve from
+ * @return right item of list node
+ */
+lisp_value *lisp_list_get_right(lisp_list *l);
+
+/**
+ * Create a new integer.
+ * @param rt runtime
+ * @param n the integer value
+ * @return newly allocated integer
+ */
 lisp_integer *lisp_integer_new(lisp_runtime *rt, int n);
+
+/**
+ * Retrieve the integer value from a lisp_integer.
+ * @param integer lisp_integer to return from
+ * @return the int value
+ */
 int lisp_integer_get(lisp_integer *integer);
 
+/**
+ * Create a new lisp_builtin from a function pointer, with a given name.
+ * @warning Builtin names are not garbage collected, since they are almost
+ * always static. If you need your name to be dynamically allocated, you'll have
+ * to free it after you free the runtime.
+ * @param rt runtime
+ * @param name name of the builtin. the interpreter will never free the name!
+ * @param call function pointer of the builtin
+ * @return new builtin object
+ */
 lisp_builtin *lisp_builtin_new(lisp_runtime *rt, char *name,
                                lisp_builtin_func call);
+
+/**
+ * Return a nil instance. Nil is simply a "special" lisp_list, with left and
+ * right both set to NULL. It is used to terminate lists. For example, the list
+ * ``'(a b)`` is internally: ``lisp_list(a, lisp_list(b, lisp_list(NULL, NULL)))``
+ * @note This function is named "new" for uniformity. However, it does't
+ * actually allocate a "new" nil value every time. Instead, each lisp_runtime
+ * has a singleton nil instance, which is never garbage collected.
+ * @param rt runtime
+ * @return the nil value
+ */
 lisp_value *lisp_nil_new(lisp_runtime *rt);
 
 #endif
