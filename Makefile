@@ -46,6 +46,8 @@ doc:
 	doxygen
 	make -C doc html
 
+serve_doc: doc
+	cd doc/_build/html; python -m http.server --bind 0.0.0.0 8080
 
 depend: $(SRCS) src/*.h inc/*.h tools/*.c
 	$(CC) $(CFLAGS) -MM obj $(SRCS) | sed 's!^\(.*\):!obj/\1:!' > depend
