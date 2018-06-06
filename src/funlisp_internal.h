@@ -86,7 +86,6 @@ struct lisp_string {
 	char *s;
 };
 
-typedef lisp_value * (*lisp_builtin_func)(lisp_runtime*, lisp_scope*,lisp_value*);
 struct lisp_builtin {
 	LISP_VALUE_HEAD;
 	lisp_builtin_func call;
