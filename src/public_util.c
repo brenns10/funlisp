@@ -25,6 +25,10 @@ void lisp_runtime_free(lisp_runtime *rt)
 	free(rt);
 }
 
+int lisp_is(lisp_value *value, lisp_type *type)
+{
+	return value->type == type;
+}
 
 lisp_scope *lisp_new_empty_scope(lisp_runtime *rt)
 {

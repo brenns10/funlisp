@@ -26,8 +26,12 @@
 
 
 /*
- * Type declarations. See funlisp.h for lisp_value.
+ * Type declarations.
  */
+
+struct lisp_value {
+	LISP_VALUE_HEAD;
+};
 
 /* A lisp_runtime is NOT a lisp_value! */
 struct lisp_runtime {
