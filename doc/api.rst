@@ -21,8 +21,26 @@ Lisp Scopes
 .. doxygengroup:: scope
    :content-only:
 
-Miscellaneous API
+Lisp Lists
+----------
+
+.. doxygengroup:: list
+   :content-only:
+
+Lisp Types
+----------
+
+.. doxygengroup:: types
+   :content-only:
+
+Builtin Functions
 -----------------
 
-.. doxygengroup:: misc
+.. doxygengroup:: builtins
+   :content-only:
+
+Embedding Tools
+---------------
+
+.. doxygengroup:: embed
    :content-only:

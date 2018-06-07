@@ -65,7 +65,7 @@ typedef struct lisp_value lisp_value;
  * to type check any ::lisp_value. Every type named lisp_X will have a
  * corresponding type_X object available.
  *
- * @sa lisp_is
+ * @sa lisp_is()
  * @ingroup value
  */
 typedef struct lisp_type lisp_type;
@@ -91,7 +91,7 @@ typedef struct lisp_scope lisp_scope;
  *           x)))
  *
  * The symbols are: define, abs, lambda, x, if, and <.
- * @ingroup misc
+ * @ingroup types
  */
 typedef struct lisp_symbol lisp_symbol;
 
@@ -99,33 +99,33 @@ typedef struct lisp_symbol lisp_symbol;
  * Error is a lisp type returned whenever (shockingly) an error occurs. This is
  * a bit of a hack to enable a base support for error handling. Errors may have
  * a string message.
- * @ingroup misc
+ * @ingroup types
  */
 typedef struct lisp_error lisp_error;
 
 /**
  * ::lisp_integer contains an int object of whatever size the C implementation
  * supports.
- * @ingroup misc
+ * @ingroup types
  */
 typedef struct lisp_integer lisp_integer;
 
 /**
  * This is a string (which occurs quoted in lisp source)
- * @ingroup misc
+ * @ingroup types
  */
 typedef struct lisp_string lisp_string;
 
 /**
  * This data structure contains a native C function which may be called by
  * funlisp code. The C function must be of type ::lisp_builtin_func.
- * @ingroup misc
+ * @ingroup types
  */
 typedef struct lisp_builtin lisp_builtin;
 
 /**
  * Data structure implementing a lisp lambda function.
- * @ingroup misc
+ * @ingroup types
  */
 typedef struct lisp_lambda lisp_lambda;
 
@@ -133,6 +133,12 @@ typedef struct lisp_lambda lisp_lambda;
  * @defgroup value Lisp Values
  * @{
  */
+
+/**
+ * Type object of ::lisp_type, for type checking.
+ * @sa lisp_is()
+ */
+extern lisp_type *type_type;
 
 /**
  * Prints a string representing ``value`` to ``f``. This output is not meant to
@@ -281,16 +287,82 @@ typedef struct lisp_list lisp_list;
 extern lisp_type *type_list;
 
 /**
- * @}
- * @defgroup misc Miscellaneous API
- * @{
+ * Create a new list node with left and right value already specified. This
+ * interface only allows you to create lists from end to beginning.
+ * @param rt runtime
+ * @param left item to go on the left side of the s-expression, usually a list
+ * item
+ * @param right item to go on the right side of the s-expression, usually the
+ * next ::lisp_list instance
+ * @return newly allocated ::lisp_list
  */
+lisp_list *lisp_list_new(lisp_runtime *rt, lisp_value *left, lisp_value *right);
 
 /**
- * Type object of ::lisp_type, for type checking.
- * @sa lisp_is()
+ * Given a ::lisp_value, put it inside a list of size 0 and return it.
+ * @param rt runtime
+ * @param entry item to put inside a list
+ * @return a singleton list
  */
-extern lisp_type *type_type;
+lisp_value *lisp_singleton_list(lisp_runtime *rt, lisp_value *entry);
+
+/**
+ * Convert the array of strings into a lisp list of string objects.
+ * @param rt runtime
+ * @param list an array of strings
+ * @param n length of the array
+ * @param can_free Does the interpreter take ownership of the memory pointed at
+ * by the strings? If so, can_free should be non-zero. If not, it should be 0.
+ * @return ::lisp_list containing ::lisp_string objects
+ */
+lisp_value *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, char can_free);
+
+/**
+ * Return the length of a list.
+ * @param list list to find the length of
+ * @return length of the list
+ */
+int lisp_list_length(lisp_list *list);
+
+/**
+ * Retrieve the left item of a list node / sexp.
+ * @param l list to retrieve from
+ * @return left item of list node
+ */
+lisp_value *lisp_list_get_left(lisp_list *l);
+
+/**
+ * Retrieve the right item of a list node / sexp
+ * @param l list to retrieve from
+ * @return right item of list node
+ */
+lisp_value *lisp_list_get_right(lisp_list *l);
+
+/**
+ * Return a nil instance. Nil is simply a "special" ::lisp_list, with left and
+ * right both set to NULL. It is used to terminate lists. For example, the list
+ * ``'(a b)`` is internally: ``lisp_list(a, lisp_list(b, lisp_list(NULL, NULL)))``
+ * @note This function is named "new" for uniformity. However, it does't
+ * actually allocate a "new" nil value every time. Instead, each ::lisp_runtime
+ * has a singleton nil instance, which is never garbage collected.
+ * @param rt runtime
+ * @return the nil value
+ */
+lisp_value *lisp_nil_new(lisp_runtime *rt);
+
+/**
+ * Return true if the ::lisp_value is "nil" (an empty list).
+ * @param l value to check
+ * @retval 1 (true) if l is nil
+ * @retval 0 (false) if l is non-nil
+ */
+int lisp_nil_p(lisp_value *l);
+
+/**
+ * @}
+ * @defgroup types Lisp Types
+ * @{
+ */
 
 /**
  * Type object of ::lisp_symbol, for type checking.
@@ -327,182 +399,6 @@ extern lisp_type *type_builtin;
  * @sa lisp_is()
  */
 extern lisp_type *type_lambda;
-
-/**
- * Parse a *single* expression from a string, returning it as a ::lisp_value. If
- * there is no expression, return NULL
- * @param rt runtime to create language objects in
- * @param input string
- * @return parsed expression
- * @retval NULL on error or no expression available
- */
-lisp_value *lisp_parse(lisp_runtime *rt, char *input);
-
-/**
- *
- * Parse an entire file of input, evaluating it within a scope as we go. Return
- * the result of evaluating the last expression in the file. This is typically
- * useful for loading a file before running main.  See lisp_run_main_if_exists()
- * @warning This function performs garbage collection as it evaluates each
- * expression, marking only the scope which it evaluates within.
- * @param rt runtime
- * @param scope scope to evaluate within (usually a default scope)
- * @param input file to load as funlisp code
- * @return the parsed code
- * @retval NULL on empty file, or file read error
- */
-lisp_value *lisp_load_file(lisp_runtime *rt, lisp_scope *scope, FILE *input);
-
-/**
- * Mark an object as still reachable or useful to the program (or you). This can
- * be called several times to mark many objects. Marking objects prevents the
- * garbage collector from freeing them. The garbage collector performs a breadth
- * first search starting from your marked objects to find all reachable language
- * objects. Thus, marking an object like a ::lisp_scope will save all symbols and
- * language objects contained within it, from being freed. Normal use is to mark
- * and sweep each time you've evaluated something:
- *
- *     lisp_value *result = lisp_eval(rt, scope, some_cool_code);
- *     lisp_mark(rt, (lisp_value*) scope);
- *     lisp_mark(rt, result);
- *     lisp_sweep(rt);
- *
- * @warning Be explicit about marking. If we had left out the third line of the
- * code sample above, there's a good chance that ``result`` would have been
- * freed when ``lisp_sweep()`` was called.
- * @param rt runtime
- * @param v value to mark as still needed. This value, and all values reachable
- * from it, are preserved on the next ``lisp_sweep()`` call.
- */
-void lisp_mark(lisp_runtime *rt, lisp_value *v);
-
-/**
- * Free every object associated with the runtime, which is not marked or
- * reachable from a marked object.
- * @param rt runtime
- */
-void lisp_sweep(lisp_runtime *rt);
-
-
-/* UTILITIES */
-
-/**
- * Convert the array of strings into a lisp list of string objects.
- * @param rt runtime
- * @param list an array of strings
- * @param n length of the array
- * @param can_free Does the interpreter take ownership of the memory pointed at
- * by the strings? If so, can_free should be non-zero. If not, it should be 0.
- * @return ::lisp_list containing ::lisp_string objects
- */
-lisp_value *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, char can_free);
-
-/**
- * Given a ::lisp_value, put it inside a list of size 0 and return it.
- * @param rt runtime
- * @param entry item to put inside a list
- * @return a singleton list
- */
-lisp_value *lisp_singleton_list(lisp_runtime *rt, lisp_value *entry);
-
-/**
- * Lookup the symbol ``main`` in the scope, and run it if it exists. Calls the
- * function with a single argument, a ::lisp_list of program arguments. argc and
- * argv should not include the main executable (just the script name and args).
- * @param rt runtime
- * @param scope scope to find main in
- * @param argc number of arguments
- * @param argv NULL-terminated argument list
- * @returns result of evaluation
- * @retval NULL if no main function existed
- */
-lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
-                                    int argc, char **argv);
-
-/**
- * A built-in function. Takes a runtime, scope of evaluation, and a list of
- * arguments.
- */
-typedef lisp_value * (*lisp_builtin_func)(lisp_runtime*, lisp_scope*,lisp_value*);
-
-/**
- * Shortcut to declare a builtin function. Simply takes a function pointer and a
- * string name, and it will internally create the ::lisp_builtin object with the
- * correct name, and bind it in the given scope.
- * @param rt runtime
- * @param scope scope to bind builtin in
- * @param name name of builtin
- * @param call function pointer defining the builtin
- */
-void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name, lisp_builtin_func call);
-
-/**
- * Given a list of arguments, evaluate each of them within a scope and return a
- * new list containing the evaluated arguments. This is most useful for
- * implementing builtin functions.
- * @param rt runtime
- * @param scope scope to evaluate within
- * @param list list of un-evaluated function arguments
- * @return list of evaluated function arguments
- */
-lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *list);
-
-/**
- * Given a list of function arguments, perform type checking and verify the
- * number of arguments according to a format string. The following formats are
- * recognized:
- *
- *     d - integer
- *     l - list
- *     s - symbol
- *     S - string
- *     o - scope
- *     e - error
- *     b - builtin
- *     t - type
- *     * - anything
- *
- * As an example, a function which takes an integer and a string, and prints the
- * string N times, might use the format string ``dS``.
- *
- * The remaining variadic arguments are pointers to object pointers, and they
- * will be assigned as each argument is parsed. EG:
- *
- *     lisp_integer *arg1;
- *     lisp_string *arg2;
- *     lisp_get_args(args, "dS", &arg1, &arg2);
- *
- * @param list Argument list to type check and count
- * @param format Format string
- * @param ... Destination pointer to place results
- * @retval 1 on success (true)
- * @retval 0 on failure (false)
- */
-int lisp_get_args(lisp_list *list, char *format, ...);
-
-/**
- * Return value, but inside a list containing the symbol ``quote``. When this
- * evaluated, it will return its contents (``value``) un-evaluated.
- * @param rt runtime
- * @param value value to return quoted
- * @return value but quoted
- */
-lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value);
-
-/**
- * Return the length of a list.
- * @param list list to find the length of
- * @return length of the list
- */
-int lisp_list_length(lisp_list *list);
-
-/**
- * Return true if the ::lisp_value is "nil" (an empty list).
- * @param l value to check
- * @retval 1 (true) if l is nil
- * @retval 0 (false) if l is non-nil
- */
-int lisp_nil_p(lisp_value *l);
 
 /**
  * Return a new, "un-owned" string. "Un-owned" means that ``str`` will not be
@@ -579,32 +475,6 @@ lisp_error  *lisp_error_new(lisp_runtime *rt, char *message);
 char *lisp_error_get(lisp_error *e);
 
 /**
- * Create a new list node with left and right value already specified. This
- * interface only allows you to create lists from end to beginning.
- * @param rt runtime
- * @param left item to go on the left side of the s-expression, usually a list
- * item
- * @param right item to go on the right side of the s-expression, usually the
- * next ::lisp_list instance
- * @return newly allocated ::lisp_list
- */
-lisp_list *lisp_list_new(lisp_runtime *rt, lisp_value *left, lisp_value *right);
-
-/**
- * Retrieve the left item of a list node / sexp.
- * @param l list to retrieve from
- * @return left item of list node
- */
-lisp_value *lisp_list_get_left(lisp_list *l);
-
-/**
- * Retrieve the right item of a list node / sexp
- * @param l list to retrieve from
- * @return right item of list node
- */
-lisp_value *lisp_list_get_right(lisp_list *l);
-
-/**
  * Create a new integer.
  * @param rt runtime
  * @param n the integer value
@@ -620,8 +490,20 @@ lisp_integer *lisp_integer_new(lisp_runtime *rt, int n);
 int lisp_integer_get(lisp_integer *integer);
 
 /**
+ * @}
+ * @defgroup builtins Builtin Functions
+ * @{
+ */
+
+/**
+ * A built-in function. Takes a runtime, scope of evaluation, and a list of
+ * arguments.
+ */
+typedef lisp_value * (*lisp_builtin_func)(lisp_runtime*, lisp_scope*,lisp_value*);
+
+/**
  * Create a new ::lisp_builtin from a function pointer, with a given name.
- * @warning Builtin names are not garbage collected, since they are almost
+ * @warning Namse of builtins are not garbage collected, since they are almost
  * always static. If you need your name to be dynamically allocated, you'll have
  * to free it after you free the runtime.
  * @param rt runtime
@@ -633,16 +515,148 @@ lisp_builtin *lisp_builtin_new(lisp_runtime *rt, char *name,
                                lisp_builtin_func call);
 
 /**
- * Return a nil instance. Nil is simply a "special" ::lisp_list, with left and
- * right both set to NULL. It is used to terminate lists. For example, the list
- * ``'(a b)`` is internally: ``lisp_list(a, lisp_list(b, lisp_list(NULL, NULL)))``
- * @note This function is named "new" for uniformity. However, it does't
- * actually allocate a "new" nil value every time. Instead, each ::lisp_runtime
- * has a singleton nil instance, which is never garbage collected.
+ * Shortcut to declare a builtin function. Simply takes a function pointer and a
+ * string name, and it will internally create the ::lisp_builtin object with the
+ * correct name, and bind it in the given scope.
  * @param rt runtime
- * @return the nil value
+ * @param scope scope to bind builtin in
+ * @param name name of builtin
+ * @param call function pointer defining the builtin
  */
-lisp_value *lisp_nil_new(lisp_runtime *rt);
+void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name, lisp_builtin_func call);
+
+/**
+ * Given a list of arguments, evaluate each of them within a scope and return a
+ * new list containing the evaluated arguments. This is most useful for
+ * implementing builtin functions.
+ * @param rt runtime
+ * @param scope scope to evaluate within
+ * @param list list of un-evaluated function arguments
+ * @return list of evaluated function arguments
+ */
+lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *list);
+
+/**
+ * Given a list of function arguments, perform type checking and verify the
+ * number of arguments according to a format string. The following formats are
+ * recognized:
+ *
+ *     d - integer
+ *     l - list
+ *     s - symbol
+ *     S - string
+ *     o - scope
+ *     e - error
+ *     b - builtin
+ *     t - type
+ *     * - anything
+ *
+ * As an example, a function which takes an integer and a string, and prints the
+ * string N times, might use the format string ``dS``.
+ *
+ * The remaining variadic arguments are pointers to object pointers, and they
+ * will be assigned as each argument is parsed. EG:
+ *
+ *     lisp_integer *arg1;
+ *     lisp_string *arg2;
+ *     lisp_get_args(args, "dS", &arg1, &arg2);
+ *
+ * @param list Argument list to type check and count
+ * @param format Format string
+ * @param ... Destination pointer to place results
+ * @retval 1 on success (true)
+ * @retval 0 on failure (false)
+ */
+int lisp_get_args(lisp_list *list, char *format, ...);
+
+/**
+ * @}
+ * @defgroup embed Embedding API
+ * @{
+ */
+
+/**
+ * Parse a *single* expression from a string, returning it as a ::lisp_value. If
+ * there is no expression, return NULL
+ * @param rt runtime to create language objects in
+ * @param input string
+ * @return parsed expression
+ * @retval NULL on error or no expression available
+ */
+lisp_value *lisp_parse(lisp_runtime *rt, char *input);
+
+/**
+ * Parse an entire file of input, evaluating it within a scope as we go. Return
+ * the result of evaluating the last expression in the file. This is typically
+ * useful for loading a file before running main.  See lisp_run_main_if_exists()
+ * @warning This function performs garbage collection as it evaluates each
+ * expression, marking only the scope which it evaluates within.
+ * @param rt runtime
+ * @param scope scope to evaluate within (usually a default scope)
+ * @param input file to load as funlisp code
+ * @return the parsed code
+ * @retval NULL on empty file, or file read error
+ */
+lisp_value *lisp_load_file(lisp_runtime *rt, lisp_scope *scope, FILE *input);
+
+/**
+ * Lookup the symbol ``main`` in the scope, and run it if it exists. Calls the
+ * function with a single argument, a ::lisp_list of program arguments. argc and
+ * argv should not include the main executable (just the script name and args).
+ * @param rt runtime
+ * @param scope scope to find main in
+ * @param argc number of arguments
+ * @param argv NULL-terminated argument list
+ * @returns result of evaluation
+ * @retval NULL if no main function existed
+ */
+lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
+                                    int argc, char **argv);
+
+/**
+ * Mark an object as still reachable or useful to the program (or you). This can
+ * be called several times to mark many objects. Marking objects prevents the
+ * garbage collector from freeing them. The garbage collector performs a breadth
+ * first search starting from your marked objects to find all reachable language
+ * objects. Thus, marking an object like a ::lisp_scope will save all symbols and
+ * language objects contained within it, from being freed. Normal use is to mark
+ * and sweep each time you've evaluated something:
+ *
+ *     lisp_value *result = lisp_eval(rt, scope, some_cool_code);
+ *     lisp_mark(rt, (lisp_value*) scope);
+ *     lisp_mark(rt, result);
+ *     lisp_sweep(rt);
+ *
+ * @warning Be explicit about marking. If we had left out the third line of the
+ * code sample above, there's a good chance that ``result`` would have been
+ * freed when ``lisp_sweep()`` was called.
+ * @param rt runtime
+ * @param v value to mark as still needed. This value, and all values reachable
+ * from it, are preserved on the next ``lisp_sweep()`` call.
+ */
+void lisp_mark(lisp_runtime *rt, lisp_value *v);
+
+/**
+ * Free every object associated with the runtime, which is not marked or
+ * reachable from a marked object.
+ * @param rt runtime
+ */
+void lisp_sweep(lisp_runtime *rt);
+
+/**
+ * Return @a value, but inside a list containing the symbol ``quote``. When this
+ * evaluated, it will return its contents (@a value) un-evaluated.
+ *
+ * This function is used during parsing, to implement the single-quote syntax
+ * feature. For example ``'(a b c)``, evaluates to the list containing a, b,
+ * and c, rather than calling a on b and c. This is because the expression is
+ * transparently converted to the more verbose ``(quote (a b c))``.
+ *
+ * @param rt runtime
+ * @param value value to return quoted
+ * @return value but quoted
+ */
+lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value);
 
 /**
  * @}
