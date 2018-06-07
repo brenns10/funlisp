@@ -141,8 +141,8 @@ typedef struct lisp_lambda lisp_lambda;
 extern lisp_type *type_type;
 
 /**
- * Prints a string representing ``value`` to ``f``. This output is not meant to
- * contain all the information necessary to recreate ``value``, just enough to
+ * Prints a string representing @a value to @a f. This output is not meant to
+ * contain all the information necessary to recreate @a value, just enough to
  * give you an idea what it is.
  * @param f file open for writing
  * @param value value to print
@@ -401,10 +401,10 @@ extern lisp_type *type_builtin;
 extern lisp_type *type_lambda;
 
 /**
- * Return a new, "un-owned" string. "Un-owned" means that ``str`` will not be
+ * Return a new, "un-owned" string. "Un-owned" means that @a str will not be
  * freed when the ::lisp_string is garbage collected. However, the ::lisp_string
- * will still contain the exact reference to ``str``, not a copy. So, your
- * application **must not** free ``str`` until the ::lisp_string containing it is
+ * will still contain the exact reference to @a str, not a copy. So, your
+ * application **must not** free @a str until the ::lisp_string containing it is
  * garbage collected. The safest approach here is if you are certain that your
  * string will not be freed until after the ::lisp_runtime is freed.
  *
@@ -443,7 +443,7 @@ lisp_string *lisp_string_new(lisp_runtime *rt, char *str);
 char *lisp_string_get(lisp_string *s);
 
 /**
- * Return a new symbol. This function will copy the ``string`` and free the copy
+ * Return a new symbol. This function will copy the @a string and free the copy
  * it on garbage collection (much like lisp_string_new()).
  * @param rt runtime
  * @param string the symbol to create
@@ -459,7 +459,7 @@ lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *string);
 char *lisp_symbol_get(lisp_symbol *s);
 
 /**
- * Return a new error. This function will copy the ``message`` and free the copy
+ * Return a new error. This function will copy the @a message and free the copy
  * on garbage collection (much like lisp_string_new()).
  * @param rt runtime
  * @param message message to use for creating the error
