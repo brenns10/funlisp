@@ -19,6 +19,16 @@ lisp_runtime *lisp_runtime_new(void)
 	return rt;
 }
 
+void lisp_runtime_set_ctx(lisp_runtime *rt, void *user)
+{
+	rt->user = user;
+}
+
+void *lisp_runtime_get_ctx(lisp_runtime *rt)
+{
+	return rt->user;
+}
+
 void lisp_runtime_free(lisp_runtime *rt)
 {
 	lisp_destroy(rt);

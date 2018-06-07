@@ -15,6 +15,7 @@ void lisp_init(lisp_runtime *rt)
 	rt->nil->next = NULL;
 	rt->head = rt->nil;
 	rt->tail = rt->nil;
+	rt->user = NULL;
 	rb_init(&rt->rb, sizeof(lisp_value*), 16);
 }
 

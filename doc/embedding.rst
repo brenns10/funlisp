@@ -265,6 +265,15 @@ This program produces exactly the output you'd expect:
   (double_or_square 11) = 22
   (double_or_square 13) = 26
 
+User Contexts
+-------------
+
+Usually, an application will want to have access to some of its own data. To
+that end, the embedding application may associate a "user context" with the
+:c:type:`lisp_runtime` using :c:func:`lisp_runtime_set_ctx()`. This context may
+be some global state, etc. Later (e.g. within a builtin function), the context
+may be retrieved with :c:func:`lisp_runtime_get_ctx()`.
+
 Advanced Topics
 ---------------
 

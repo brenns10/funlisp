@@ -37,6 +37,7 @@ struct lisp_value {
 struct lisp_runtime {
 	lisp_value *head;
 	lisp_value *tail;
+	void *user;
 
 	/* Some special values we don't want to lose track of */
 	lisp_value *nil;

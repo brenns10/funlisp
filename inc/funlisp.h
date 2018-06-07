@@ -19,6 +19,13 @@
  * created, and is used for garbage collection as well as holding any other
  * information about your instance of the interpreter. The context can be
  * created with lisp_runtime_new() and destroyed with lisp_runtime_free().
+ * The context is passed to nearly every function in the library, and builtin
+ * functions receive it as well.
+ *
+ * The context may contain a "user context" (simply a void pointer) that an
+ * embedding application may want its builtin functions to have access to.
+ * Context is added with lisp_runtime_set_ctx() and retrieved with
+ * lisp_runtime_get_ctx().
  */
 typedef struct lisp_runtime lisp_runtime;
 
@@ -28,6 +35,20 @@ typedef struct lisp_runtime lisp_runtime;
  * @return new runtime
  */
 lisp_runtime *lisp_runtime_new(void);
+
+/**
+ * Set the user context of a ::lisp_runtime.
+ * @param rt runtime
+ * @param user user context to set
+ */
+void lisp_runtime_set_ctx(lisp_runtime *rt, void *user);
+
+/**
+ * Get the user context from a ::lisp_runtime.
+ * @param rt runtime
+ * @return the user context object
+ */
+void *lisp_runtime_get_ctx(lisp_runtime *rt);
 
 /**
  * Clean up all resources and free a runtime object.
