@@ -10,7 +10,7 @@
 #include <stdio.h> /* for FILE* */
 
 /**
- * @defgroup runtime Runtime
+ * @defgroup runtime Funlisp Runtime
  * @{
  */
 
@@ -38,18 +38,101 @@ lisp_runtime *lisp_runtime_new(void);
  */
 void lisp_runtime_free(lisp_runtime *rt);
 
-/**
- * @}
- * @defgroup value Value
- * @{
+/** @} */
+
+/*
+ * Although we use Doxygen @defgroup to group items into modules, we can't put
+ * all declarations in their module group, because we would get compiler errors
+ * about unknown types.  So in this section, we put all our structure
+ * declarations and documentation. We use @ingroup to add them to their
+ * respective modules. Then, we resume using modules below.
  */
 
 /**
  * In funlisp, (almost) everything is a ::lisp_value. That is, it can be cast to
  * a ``lisp_value *`` and operated on. Integers, Strings, Code, etc. The only
  * thing which is not a ::lisp_value is the ::lisp_runtime.
+ * @ingroup value
  */
 typedef struct lisp_value lisp_value;
+
+/**
+ * A type object is a ::lisp_value containing operations that must be supported
+ * by every type of object. It is not garbage collected, and every ::lisp_value
+ * contains a pointer to its type object (even lisp_types themselves!).
+ *
+ * The only external use for a type object is that you can use it wih lisp_is()
+ * to type check any ::lisp_value. Every type named lisp_X will have a
+ * corresponding type_X object available.
+ *
+ * @sa lisp_is
+ * @ingroup value
+ */
+typedef struct lisp_type lisp_type;
+
+/**
+ * Scope objects bind ::lisp_symbol's to ::lisp_value's. In order for the
+ * language to function correctly, the root scope needs to contain all of the
+ * language built-in features. You can obtain a scope like this by calling
+ * lisp_new_default_scope(), or you can create an empty one with
+ * lisp_new_empty_scope().
+ * @ingroup scope
+ */
+typedef struct lisp_scope lisp_scope;
+
+/**
+ * Symbols are tokens (non-numeric, non parentheses) which occur in funlisp
+ * code, not surounded by double quotes. For example, in the following code:
+ *
+ *     (define abs
+ *       (lambda (x)
+ *         (if (< x 0)
+ *           (- 0 x)
+ *           x)))
+ *
+ * The symbols are: define, abs, lambda, x, if, and <.
+ * @ingroup misc
+ */
+typedef struct lisp_symbol lisp_symbol;
+
+/**
+ * Error is a lisp type returned whenever (shockingly) an error occurs. This is
+ * a bit of a hack to enable a base support for error handling. Errors may have
+ * a string message.
+ * @ingroup misc
+ */
+typedef struct lisp_error lisp_error;
+
+/**
+ * ::lisp_integer contains an int object of whatever size the C implementation
+ * supports.
+ * @ingroup misc
+ */
+typedef struct lisp_integer lisp_integer;
+
+/**
+ * This is a string (which occurs quoted in lisp source)
+ * @ingroup misc
+ */
+typedef struct lisp_string lisp_string;
+
+/**
+ * This data structure contains a native C function which may be called by
+ * funlisp code. The C function must be of type ::lisp_builtin_func.
+ * @ingroup misc
+ */
+typedef struct lisp_builtin lisp_builtin;
+
+/**
+ * Data structure implementing a lisp lambda function.
+ * @ingroup misc
+ */
+typedef struct lisp_lambda lisp_lambda;
+
+/**
+ * @defgroup value Lisp Values
+ * @{
+ */
 
 /**
  * Prints a string representing ``value`` to ``f``. This output is not meant to
@@ -87,6 +170,12 @@ lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope, lisp_value *callable,
 /**
  * Perform type checking. Returns true (non-zero) when @a value has type @a
  * type.
+ * @code
+ * lisp_value *v = lisp_eval(rt, some_code, some_scope);
+ * if (lisp_is(v, type_list)) {
+ *     // do something based on this
+ * }
+ * @endcode
  * @param value value to type-check
  * @param type type object for the type you're interested in
  * @retval true (non-zero) if @a value has type @a type
@@ -96,25 +185,76 @@ int lisp_is(lisp_value *value, lisp_type *type);
 
 /**
  * @}
- * @defgroup misc Funlisp misc components
+ * @defgroup scope Lisp Scopes
  * @{
  */
 
 /**
- * Type objects hold all the information & operations that a data type in
- * funlisp needs in order to be a part of the language. This includes the name
- * of the type, and operations such as printing, calling, evaluating, and some
- * garbage collection related functionality.
+ * Type object of ::lisp_scope, for type checking.
+ * @sa lisp_is()
  */
-typedef struct lisp_type lisp_type;
+extern lisp_type *type_scope;
 
 /**
- * Scope objects bind symbols to ::lisp_value's. In order for the language to
- * function correctly, the root scope needs to contain all of the language
- * built-in features. You can obtain a scope like this by calling
- * lisp_new_default_scope().
+ * Create a new scope containing the default builtins (lambda, define,
+ * arithmetic operators, etc). This is just a shortcut for using
+ * lisp_new_empty_scope() followed by lisp_scope_populate_builtin().
+ * @param rt runtime
+ * @returns new default scope
  */
-typedef struct lisp_scope lisp_scope;
+lisp_scope *lisp_new_default_scope(lisp_runtime *rt);
+
+/**
+ * Create a new empty scope. This would be most useful when creating a new
+ * nested scope, e.g. for a function body.
+ * @param rt runtime
+ * @returns new empty scope
+ */
+lisp_scope *lisp_new_empty_scope(lisp_runtime *rt);
+
+/**
+ * Add all language defaults to a scope. This is critical for the language work,
+ * at all, since most language elements are implemented as builtin functions.
+ * This function is used internally by lisp_new_default_scope().
+ * @param rt runtime
+ * @param scope scope to add builtins too
+ */
+void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope);
+
+/**
+ * Bind a symbol to a value in a scope.
+ * @param scope scope to define the name in
+ * @param symbol symbol that is the name
+ * @param value what the symbol is bound to
+ */
+void lisp_scope_bind(lisp_scope *scope, lisp_symbol *symbol, lisp_value *value);
+
+/**
+ * Look up a symbol within a scope. If it is not found in this scope, look
+ * within the parent scope etc, until it is found. If it is not found at all,
+ * return a ::lisp_error object.
+ * @param rt runtime
+ * @param scope scope to look in
+ * @param symbol symbol to look up
+ * @return value found, or a ::lisp_error when not found
+ */
+lisp_value *lisp_scope_lookup(lisp_runtime *rt, lisp_scope *scope,
+                              lisp_symbol *symbol);
+/**
+ * Lookup a name within a scope. Uses a string argument rather than a
+ * ::lisp_symbol object. Behavior is the same as lisp_scope_lookup().
+ * @param rt runtime
+ * @param scope scope to look in
+ * @param name string name to look up
+ * @return value found, or a ::lisp_error when not found
+ */
+lisp_value *lisp_scope_lookup_string(lisp_runtime *rt, lisp_scope *scope, char *name);
+
+/**
+ * @}
+ * @defgroup list Lisp Lists
+ * @{
+ */
 
 /**
  * Lisp is a list-processing language, and ::lisp_list is a building block for
@@ -135,90 +275,56 @@ typedef struct lisp_scope lisp_scope;
 typedef struct lisp_list lisp_list;
 
 /**
- * Symbols are tokens (non-numeric, non parentheses) which occur in funlisp
- * code, not surounded by double quotes. For example, in the following code:
- *
- *     (define abs
- *       (lambda (x)
- *         (if (< x 0)
- *           (- 0 x)
- *           x)))
- *
- *  The symbols are: define, abs, lambda, x, if, and <.
- */
-typedef struct lisp_symbol lisp_symbol;
-
-/**
- * Error is a lisp type returned whenever (shockingly) an error occurs. This is
- * a bit of a hack to enable a base support for error handling. Errors may have
- * a string message.
- */
-typedef struct lisp_error lisp_error;
-
-/**
- * ::lisp_integer contains an int object of whatever size the C implementation
- * supports.
- */
-typedef struct lisp_integer lisp_integer;
-
-/**
- * This is a string (which occurs quoted in lisp source)
- */
-typedef struct lisp_string lisp_string;
-
-/**
- * This data structure contains a native C function which may be called by
- * funlisp code. The C function must be of type ::lisp_builtin_func.
- */
-typedef struct lisp_builtin lisp_builtin;
-
-/**
- * Data structure implementing a lisp lambda function.
- */
-typedef struct lisp_lambda lisp_lambda;
-
-/**
- * Type object of ::lisp_type
- */
-extern lisp_type *type_type;
-
-/**
- * Type object of ::lisp_scope
- */
-extern lisp_type *type_scope;
-
-/**
- * Type object of ::lisp_list
+ * Type object of ::lisp_list, for type checking.
+ * @sa lisp_is()
  */
 extern lisp_type *type_list;
 
 /**
- * Type object of ::lisp_symbol
+ * @}
+ * @defgroup misc Miscellaneous API
+ * @{
+ */
+
+/**
+ * Type object of ::lisp_type, for type checking.
+ * @sa lisp_is()
+ */
+extern lisp_type *type_type;
+
+/**
+ * Type object of ::lisp_symbol, for type checking.
+ * @sa lisp_is()
  */
 extern lisp_type *type_symbol;
 
 /**
- * Type object of ::lisp_error
+ * Type object of ::lisp_error, for type checking.
+ * @sa lisp_is()
  */
 extern lisp_type *type_error;
 
 /**
- * Type object of ::lisp_integer
+ * Type object of ::lisp_integer, for type checking.
+ * @sa lisp_is()
  */
 extern lisp_type *type_integer;
 
 /**
- * Type object of ::lisp_string
+ * Type object of ::lisp_string, for type checking.
+ * @sa lisp_is()
  */
 extern lisp_type *type_string;
 
 /**
- * Type object of ::lisp_builtin
+ * Type object of ::lisp_builtin, for type checking.
+ * @sa lisp_is()
  */
 extern lisp_type *type_builtin;
 
 /**
- * Type object of ::lisp_lambda
+ * Type object of ::lisp_lambda, for type checking.
+ * @sa lisp_is()
  */
 extern lisp_type *type_lambda;
 
@@ -246,22 +352,6 @@ lisp_value *lisp_parse(lisp_runtime *rt, char *input);
  * @retval NULL on empty file, or file read error
  */
 lisp_value *lisp_load_file(lisp_runtime *rt, lisp_scope *scope, FILE *input);
-
-/**
- * Create a new scope containing the default builtins (lambda, define,
- * arithmetic operators, etc).
- * @param rt runtime
- * @returns new default scope
- */
-lisp_scope *lisp_new_default_scope(lisp_runtime *rt);
-
-/**
- * Create a new empty scope. This would be most useful when creating a new
- * nested scope, e.g. for a function body.
- * @param rt runtime
- * @returns new empty scope
- */
-lisp_scope *lisp_new_empty_scope(lisp_runtime *rt);
 
 /**
  * Mark an object as still reachable or useful to the program (or you). This can
@@ -336,35 +426,6 @@ lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
 typedef lisp_value * (*lisp_builtin_func)(lisp_runtime*, lisp_scope*,lisp_value*);
 
 /**
- * Bind a symbol to a value in a scope.
- * @param scope scope to define the name in
- * @param symbol symbol that is the name
- * @param value what the symbol is bound to
- */
-void lisp_scope_bind(lisp_scope *scope, lisp_symbol *symbol, lisp_value *value);
-
-/**
- * Look up a symbol within a scope. If it is not found in this scope, look
- * within the parent scope etc, until it is found. If it is not found at all,
- * return a ::lisp_error object.
- * @param rt runtime
- * @param scope scope to look in
- * @param symbol symbol to look up
- * @return value found, or a ::lisp_error when not found
- */
-lisp_value *lisp_scope_lookup(lisp_runtime *rt, lisp_scope *scope,
-                              lisp_symbol *symbol);
-/**
- * Lookup a name within a scope, without creating a symbol object. Behaves the
- * same as lisp_scope_lookup().
- * @param rt runtime
- * @param scope scope to look in
- * @param name string name to look up
- * @return value found, or a ::lisp_error when not found
- */
-lisp_value *lisp_scope_lookup_string(lisp_runtime *rt, lisp_scope *scope, char *name);
-
-/**
  * Shortcut to declare a builtin function. Simply takes a function pointer and a
  * string name, and it will internally create the ::lisp_builtin object with the
  * correct name, and bind it in the given scope.
@@ -374,14 +435,6 @@ lisp_value *lisp_scope_lookup_string(lisp_runtime *rt, lisp_scope *scope, char *
  * @param call function pointer defining the builtin
  */
 void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name, lisp_builtin_func call);
-
-/**
- * Add all language defaults to a scope. This is critical for the language work,
- * at all, since most language elements are implemented as builtin functions.
- * @param rt runtime
- * @param scope scope to add builtins too
- */
-void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope);
 
 /**
  * Given a list of arguments, evaluate each of them within a scope and return a

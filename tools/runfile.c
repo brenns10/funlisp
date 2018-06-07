@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 	fclose(input);
 
 	result = lisp_run_main_if_exists(rt, scope, argc - 2, argv + 2);
-	if (result && result->type == type_error)
+	if (result && lisp_is(result, type_error))
 		rv = 1;
 	else
 		rv = 0;
