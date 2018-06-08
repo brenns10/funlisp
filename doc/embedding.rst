@@ -108,7 +108,8 @@ Builtins must have the following signature:
 
    lisp_value *lisp_builtin_somename(lisp_runtime *rt,
                                      lisp_scope *scope,
-                                     lisp_value *arglist);
+                                     lisp_value *arglist,
+                                     void *user);
 
 The scope argument contains the current binding of names to values, and the
 arglist is a list of arguments to your function, which **have not been
@@ -150,6 +151,10 @@ function can help you verify the number of arguments, if not their types. When
 it fails, it returns false, which you should typically handle by returning an
 error (:c:func:`lisp_error_new()`). If it doesn't fail, your function is free to
 do whatever logic you'd like.
+
+Finally, note that the signature includes a ``void *user`` parameter. This "user
+context" is specified when you register the builtin function, and passed back to
+you at runtime.
 
 Basics of Lisp Types
 --------------------
@@ -200,20 +205,30 @@ interpreter's global scope. Anything can be added to a scope with
 ``lisp_scope_bind()``., but the name needs to be a ``lisp_symbol`` instance and
 the value needs to be a ``lisp_value``. To save you the trouble of creating
 those objects, you can simply use ``lisp_scope_add_builtin()``, which takes a
-scope, a string name, and a function pointer.
+scope, a string name, a function pointer, and a user context pointer.
 
 Here is a code example that puts all of this together, based on the REPL given
 above.
 
-.. literalinclude:: ../tools/runfile.c
+.. literalinclude:: ../tools/hello_repl.c
   :language: C
 
-An example session using the builtin:
+In this example, we've added a builtin function, defined at (1). This function
+takes a string, and prints a greeting message. It uses its "user context" object
+as a string, to introduce itself. During startup, we register the builtin
+function once, with name "hello" (2). We provide it with a user context of "a
+computer." We register it again at (3), with the name "hello_from_stephen", and
+the user context "Stephen."
+
+An example session using the builtin shows how the functions may be called from
+the REPL, and how the user context objects affect the builtin:
 
 .. code::
 
    > (hello "Stephen")
-   Hello, Stephen!
+   Hello, Stephen! I'm a computer.
+   > (hello_from_stephen "computer")
+   Hello, computer! I'm Stephen.
    > (hello 1)
    error: expected a string!
    > (hello 'Stephen)
@@ -273,6 +288,12 @@ that end, the embedding application may associate a "user context" with the
 :c:type:`lisp_runtime` using :c:func:`lisp_runtime_set_ctx()`. This context may
 be some global state, etc. Later (e.g. within a builtin function), the context
 may be retrieved with :c:func:`lisp_runtime_get_ctx()`.
+
+Furthermore, each builtin function may associate itself with a user context
+object as well (provided upon registration). This allows the same C function to
+be registered multiple times as multiple Funlisp functions. It also allows the C
+function to access additional context, which it may not have been able to get
+through the context object attached to the runtime.
 
 Advanced Topics
 ---------------

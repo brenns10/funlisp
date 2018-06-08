@@ -477,7 +477,7 @@ static lisp_value *builtin_call(lisp_runtime *rt, lisp_scope *scope,
                                 lisp_value *c, lisp_value *arguments)
 {
 	lisp_builtin *builtin = (lisp_builtin*) c;
-	return builtin->call(rt, scope, arguments);
+	return builtin->call(rt, scope, arguments, builtin->user);
 }
 
 /*

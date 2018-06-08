@@ -95,6 +95,7 @@ struct lisp_builtin {
 	LISP_VALUE_HEAD;
 	lisp_builtin_func call;
 	char *name;
+	void *user;
 };
 
 struct lisp_lambda {

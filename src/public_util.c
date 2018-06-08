@@ -70,11 +70,12 @@ lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
 }
 
 lisp_builtin *lisp_builtin_new(lisp_runtime *rt, char *name,
-                               lisp_builtin_func call)
+                               lisp_builtin_func call, void *user)
 {
 	lisp_builtin *builtin = (lisp_builtin*)lisp_new(rt, type_builtin);
 	builtin->call = call;
 	builtin->name = name;
+	builtin->user = user;
 	return builtin;
 }
 

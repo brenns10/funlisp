@@ -517,10 +517,16 @@ int lisp_integer_get(lisp_integer *integer);
  */
 
 /**
- * A built-in function. Takes a runtime, scope of evaluation, and a list of
- * arguments.
+ * A built-in function. Takes four arguments:
+ * 1. The ::lisp_runtime associated with it. This may be used to retrieved the
+ *    runtime's user context object (see lisp_runtime_get_ctx()).
+ * 2. The ::lisp_scope this function is being called executed within. Most
+ *    builtin functions will want to evaluate this with lisp_eval_list().
+ * 3. The arguments to this function, as a ::lisp_list. These have not yet been
+ *    evaluated.
+ * 4. The user context associated with this builtin.
  */
-typedef lisp_value * (*lisp_builtin_func)(lisp_runtime*, lisp_scope*,lisp_value*);
+typedef lisp_value * (*lisp_builtin_func)(lisp_runtime*, lisp_scope*, lisp_value*, void*);
 
 /**
  * Create a new ::lisp_builtin from a function pointer, with a given name.
@@ -530,10 +536,11 @@ typedef lisp_value * (*lisp_builtin_func)(lisp_runtime*, lisp_scope*,lisp_value*
  * @param rt runtime
  * @param name name of the builtin. the interpreter will never free the name!
  * @param call function pointer of the builtin
+ * @param user a user context pointer which will be given to the builtin
  * @return new builtin object
  */
 lisp_builtin *lisp_builtin_new(lisp_runtime *rt, char *name,
-                               lisp_builtin_func call);
+                               lisp_builtin_func call, void *user);
 
 /**
  * Shortcut to declare a builtin function. Simply takes a function pointer and a
@@ -543,8 +550,10 @@ lisp_builtin *lisp_builtin_new(lisp_runtime *rt, char *name,
  * @param scope scope to bind builtin in
  * @param name name of builtin
  * @param call function pointer defining the builtin
+ * @param user a user context pointer which will be given to the builtin
  */
-void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name, lisp_builtin_func call);
+void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
+                            lisp_builtin_func call, void *user);
 
 /**
  * Given a list of arguments, evaluate each of them within a scope and return a
