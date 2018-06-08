@@ -191,6 +191,11 @@ lisp_type *type_list = &type_list_obj;
 static lisp_value *list_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *v)
 {
 	lisp_list *list = (lisp_list*) v;
+
+	if (lisp_nil_p(v)) {
+		return (lisp_value*) lisp_error_new(rt, "cannot call empty list");
+	}
+
 	if (list->right->type != type_list) {
 		return (lisp_value*) lisp_error_new(rt, "bad function call syntax");
 	}
