@@ -2,6 +2,8 @@ obj/iter.o: src/iter.c src/iter.h
 obj/types.o: src/types.c src/funlisp_internal.h inc/funlisp.h src/iter.h \
  src/ringbuf.h src/hashtable.h
 obj/charbuf.o: src/charbuf.c src/charbuf.h
+obj/builtins.o: src/builtins.c src/funlisp_internal.h inc/funlisp.h \
+ src/iter.h src/ringbuf.h src/hashtable.h
 obj/parse.o: src/parse.c src/funlisp_internal.h inc/funlisp.h src/iter.h \
  src/ringbuf.h src/hashtable.h src/charbuf.h
 obj/util.o: src/util.c src/funlisp_internal.h inc/funlisp.h src/iter.h \
