@@ -6,6 +6,7 @@ bin
 GTAGS
 GRTAGS
 GPATH
+tags
 doc/_build
 doc/xml
 syntax: regexp
