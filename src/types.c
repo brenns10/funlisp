@@ -21,7 +21,7 @@ static lisp_value *eval_error(lisp_runtime *rt, lisp_scope *s, lisp_value *v)
 {
 	(void)s;
 	(void)v;
-	return (lisp_value*) lisp_error_new(rt, "cannot evaluate this object");
+	return lisp_error_new(rt, "cannot evaluate this object");
 }
 
 static lisp_value *eval_same(lisp_runtime *rt, lisp_scope *s, lisp_value *v)
@@ -37,7 +37,7 @@ static lisp_value *call_error(lisp_runtime *rt, lisp_scope *s, lisp_value *c,
 	(void)s;
 	(void)c;
 	(void)v;
-	return (lisp_value*) lisp_error_new(rt, "not callable!");
+	return lisp_error_new(rt, "not callable!");
 }
 
 static lisp_value *call_same(lisp_runtime *rt, lisp_scope *s, lisp_value *c,
@@ -193,15 +193,15 @@ static lisp_value *list_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *v)
 	lisp_list *list = (lisp_list*) v;
 
 	if (lisp_nil_p(v)) {
-		return (lisp_value*) lisp_error_new(rt, "cannot call empty list");
+		return lisp_error_new(rt, "Cannot call empty list");
 	}
 
 	if (list->right->type != type_list) {
-		return (lisp_value*) lisp_error_new(rt, "bad function call syntax");
+		return lisp_error_new(rt, "You may not call with an s-expression");
 	}
 	lisp_value *callable = lisp_eval(rt, scope, list->left);
-	lisp_value *rv = lisp_call(rt, scope, callable, list->right);
-	return rv;
+	lisp_error_check(callable);
+	return lisp_call(rt, scope, callable, list->right);
 }
 
 static void list_print_internal(FILE *f, lisp_list *list)
@@ -526,6 +526,7 @@ static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
 {
 	lisp_lambda *lambda = (lisp_lambda*) c;
 	lisp_list *argvalues = (lisp_list*)lisp_eval_list(rt, scope, arguments);
+	lisp_error_check(argvalues);
 	lisp_scope *inner = (lisp_scope*)lisp_new(rt, type_scope);
 	inner->up = lambda->closure;
 
@@ -537,10 +538,10 @@ static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
 	}
 
 	if (!lisp_nil_p((lisp_value*)it1)) {
-		return (lisp_value*) lisp_error_new(rt, "not enough arguments");
+		return lisp_error_new(rt, "not enough arguments to lambda call");
 	}
 	if (!lisp_nil_p((lisp_value*)it2)) {
-		return (lisp_value*) lisp_error_new(rt, "too many arguments");
+		return lisp_error_new(rt, "too many arguments to lambda call");
 	}
 
 	return lisp_eval(rt, inner, lambda->code);

@@ -36,10 +36,12 @@ int main(int argc, char **argv)
 	fclose(input);
 
 	result = lisp_run_main_if_exists(rt, scope, argc - 2, argv + 2);
-	if (result && lisp_is(result, type_error))
+	if (!result) {
+		lisp_print_error(rt, stderr);
 		rv = 1;
-	else
+	} else {
 		rv = 0;
+	}
 	lisp_runtime_free(rt); /* sweeps everything before exit */
 	return rv;
 }

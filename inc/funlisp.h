@@ -486,7 +486,7 @@ char *lisp_symbol_get(lisp_symbol *s);
  * @param message message to use for creating the error
  * @return a new error
  */
-lisp_error  *lisp_error_new(lisp_runtime *rt, char *message);
+lisp_value  *lisp_error_new(lisp_runtime *rt, char *message);
 
 /**
  * Return the message from an error.
@@ -638,7 +638,8 @@ lisp_value *lisp_load_file(lisp_runtime *rt, lisp_scope *scope, FILE *input);
  * @param argc number of arguments
  * @param argv NULL-terminated argument list
  * @returns result of evaluation
- * @retval NULL if no main function existed
+ * @retval a nil list when there is no main symbol
+ * @retval NULL on error
  */
 lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
                                     int argc, char **argv);
@@ -704,6 +705,40 @@ lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value);
  * @param file where to dump stack trace to
  */
 void lisp_dump_stack(lisp_runtime *rt, lisp_list *stack, FILE *file);
+
+/**
+ * A macro for error checking the return value of a lisp_eval() or lisp_call()
+ * function. This will return NULL when its argumnet is NULL, helping functions
+ * short-circuit in the case of an error.
+ * @param value value to error check
+ */
+#define lisp_error_check(value) do { \
+		if (!value) { \
+			return NULL; \
+		} \
+	} while (0)
+
+/**
+ * Prints the last error reported to the runtime, on @a file. If there is no
+ * error, this prints a loud BUG message to FILE, indicating that an error was
+ * expected but not found.
+ * @param rt runtime
+ * @param file file to print error to (usually stderr)
+ */
+void lisp_print_error(lisp_runtime *rt, FILE *file);
+
+/**
+ * Returns the error text of the current error registered with the runtime.
+ * @param rt runtime
+ * @return error string
+ */
+char *lisp_get_error(lisp_runtime *rt);
+
+/**
+ * Clears the error in the runtime.
+ * @param rt runtime
+ */
+void lisp_clear_error(lisp_runtime *rt);
 
 /**
  * @}

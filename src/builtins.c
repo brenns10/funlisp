@@ -13,8 +13,8 @@ static lisp_value *lisp_builtin_eval(lisp_runtime *rt, lisp_scope *scope,
 {
 	(void) user; /* unused */
 	lisp_list *evald = (lisp_list*)lisp_eval_list(rt, scope, arguments);
-	lisp_value *result = lisp_eval(rt, scope, evald->left);
-	return result;
+	lisp_error_check(evald);
+	return lisp_eval(rt, scope, evald->left);
 }
 
 static lisp_value *lisp_builtin_car(lisp_runtime *rt, lisp_scope *scope,
@@ -23,11 +23,12 @@ static lisp_value *lisp_builtin_car(lisp_runtime *rt, lisp_scope *scope,
 	(void) user; /* unused */
 	lisp_list *firstarg;
 	lisp_list *arglist = (lisp_list*) lisp_eval_list(rt, scope, a);
+	lisp_error_check(arglist);
 	if (!lisp_get_args(arglist, "l", &firstarg)) {
-		return (lisp_value*)lisp_error_new(rt, "wrong arguments to car");
+		return lisp_error_new(rt, "wrong arguments to car");
 	}
 	if (lisp_list_length(firstarg) == 0) {
-		return (lisp_value*)lisp_error_new(rt, "expected at least one item");
+		return lisp_error_new(rt, "expected at least one item");
 	}
 	return firstarg->left;
 }
@@ -38,8 +39,9 @@ static lisp_value *lisp_builtin_cdr(lisp_runtime *rt, lisp_scope *scope,
 	(void) user; /* unused */
 	lisp_list *firstarg;
 	lisp_list *arglist = (lisp_list*) lisp_eval_list(rt, scope, a);
+	lisp_error_check(arglist);
 	if (!lisp_get_args(arglist, "l", &firstarg)) {
-		return (lisp_value*) lisp_error_new(rt, "wrong arguments to cdr");
+		return lisp_error_new(rt, "wrong arguments to cdr");
 	}
 	/* save rv because firstarg may be deleted after decref */
 	return firstarg->right;
@@ -53,7 +55,7 @@ static lisp_value *lisp_builtin_quote(lisp_runtime *rt, lisp_scope *scope,
 	lisp_value *firstarg;
 	lisp_list *arglist = (lisp_list*) a;
 	if (!lisp_get_args(arglist, "*", &firstarg)) {
-		return (lisp_value*) lisp_error_new(rt, "wrong arguments to quote");
+		return lisp_error_new(rt, "wrong arguments to quote");
 	}
 	return arglist->left;
 }
@@ -65,8 +67,9 @@ static lisp_value *lisp_builtin_cons(lisp_runtime *rt, lisp_scope *scope,
 	lisp_value *a1;
 	lisp_value *l;
 	lisp_list *arglist = (lisp_list*) lisp_eval_list(rt, scope, a);
+	lisp_error_check(arglist);
 	if (!lisp_get_args(arglist, "**", &a1, &l)) {
-		return (lisp_value*) lisp_error_new(rt, "wrong arguments to cons");
+		return lisp_error_new(rt, "wrong arguments to cons");
 	}
 	lisp_list *new = (lisp_list*)lisp_new(rt, type_list);
 	new->left = a1;
@@ -84,13 +87,13 @@ static lisp_value *lisp_builtin_lambda(lisp_runtime *rt, lisp_scope *scope,
 	(void)scope;
 
 	if (!lisp_get_args(our_args, "l*", &argnames, &code)) {
-		return (lisp_value*) lisp_error_new(rt, "expected argument list and code");
+		return lisp_error_new(rt, "expected argument list and code");
 	}
 
 	lisp_list *it = argnames;
 	while (!lisp_nil_p((lisp_value*)it)) {
 		if (it->left->type != type_symbol) {
-			return (lisp_value*) lisp_error_new(rt, "argument names must be symbols");
+			return lisp_error_new(rt, "argument names must be symbols");
 		}
 		it = (lisp_list*) it->right;
 	}
@@ -110,10 +113,11 @@ static lisp_value *lisp_builtin_define(lisp_runtime *rt, lisp_scope *scope,
 	lisp_value *expr;
 
 	if (!lisp_get_args((lisp_list*)a, "s*", &s, &expr)) {
-		return (lisp_value*) lisp_error_new(rt, "expected name and expression");
+		return lisp_error_new(rt, "expected name and expression");
 	}
 
 	lisp_value *evald = lisp_eval(rt, scope, expr);
+	lisp_error_check(evald);
 	lisp_scope_bind(scope, s, evald);
 	return evald;
 }
@@ -124,11 +128,12 @@ static lisp_value *lisp_builtin_plus(lisp_runtime *rt, lisp_scope *scope,
 	(void) user; /* unused */
 	lisp_integer *i;
 	lisp_list *args = (lisp_list*)lisp_eval_list(rt, scope, a);
+	lisp_error_check(args);
 	int sum = 0;
 
 	while (!lisp_nil_p((lisp_value*)args)) {
 		if (args->left->type != type_integer) {
-			return (lisp_value*) lisp_error_new(rt, "expect integers for addition");
+			return lisp_error_new(rt, "expect integers for addition");
 		}
 		i = (lisp_integer*) args->left;
 		sum += i->x;
@@ -146,11 +151,12 @@ static lisp_value *lisp_builtin_minus(lisp_runtime *rt, lisp_scope *scope,
 	(void) user; /* unused */
 	lisp_integer *i;
 	lisp_list *args = (lisp_list*)lisp_eval_list(rt, scope, a);
+	lisp_error_check(args);
 	int val = 0;
 	int len = lisp_list_length(args);
 
 	if (len < 1) {
-		return (lisp_value*) lisp_error_new(rt, "expected at least one arg");
+		return lisp_error_new(rt, "expected at least one arg");
 	} else if (len == 1) {
 		i = (lisp_integer*) args->left;
 		val = - i->x;
@@ -160,7 +166,7 @@ static lisp_value *lisp_builtin_minus(lisp_runtime *rt, lisp_scope *scope,
 		args = (lisp_list*)args->right;
 		while (!lisp_nil_p((lisp_value*)args)) {
 			if (args->left->type != type_integer) {
-				return (lisp_value*)lisp_error_new(rt, "expected integer");
+				return lisp_error_new(rt, "expected integer");
 			}
 			i = (lisp_integer*) args->left;
 			val -= i->x;
@@ -179,11 +185,12 @@ static lisp_value *lisp_builtin_multiply(lisp_runtime *rt, lisp_scope *scope,
 	(void) user; /* unused */
 	lisp_integer *i;
 	lisp_list *args = (lisp_list*) lisp_eval_list(rt, scope, a);
+	lisp_error_check(args);
 	int product = 1;
 
 	while (!lisp_nil_p((lisp_value*)args)) {
 		if (args->left->type != type_integer) {
-			return (lisp_value*) lisp_error_new(rt, "expect integers for multiplication");
+			return lisp_error_new(rt, "expect integers for multiplication");
 		}
 		i = (lisp_integer*) args->left;
 		product *= i->x;
@@ -201,22 +208,23 @@ static lisp_value *lisp_builtin_divide(lisp_runtime *rt, lisp_scope *scope,
 	(void) user; /* unused */
 	lisp_integer *i;
 	lisp_list *args = (lisp_list*)lisp_eval_list(rt, scope, a);
+	lisp_error_check(args);
 	int val = 0;
 	int len = lisp_list_length(args);
 
 	if (len < 1) {
-		return (lisp_value*) lisp_error_new(rt, "expected at least one arg");
+		return lisp_error_new(rt, "expected at least one arg");
 	}
 	i = (lisp_integer*) args->left;
 	val = i->x;
 	args = (lisp_list*)args->right;
 	while (!lisp_nil_p((lisp_value*)args)) {
 		if (args->left->type != type_integer) {
-			return (lisp_value*)lisp_error_new(rt, "expected integer");
+			return lisp_error_new(rt, "expected integer");
 		}
 		i = (lisp_integer*) args->left;
 		if (i->x == 0) {
-			return (lisp_value*) lisp_error_new(rt, "divide by zero");
+			return lisp_error_new(rt, "divide by zero");
 		}
 		val /= i->x;
 		args = (lisp_list*) args->right;
@@ -233,9 +241,10 @@ static lisp_value *lisp_builtin_cmp_util(lisp_runtime *rt, lisp_scope *scope,
 	(void) user; /* unused */
 	lisp_integer *first, *second;
 	lisp_list *args = (lisp_list*) lisp_eval_list(rt, scope, a);
+	lisp_error_check(args);
 
 	if (!lisp_get_args((lisp_list*)args, "dd", &first, &second)) {
-		return (lisp_value*) lisp_error_new(rt, "expected two integers");
+		return lisp_error_new(rt, "expected two integers");
 	}
 
 	lisp_integer *result = (lisp_integer*)lisp_new(rt, type_integer);
@@ -248,6 +257,7 @@ static lisp_value *lisp_builtin_eq(lisp_runtime *rt, lisp_scope *scope,
 {
 	(void) user; /* unused */
 	lisp_integer *v = (lisp_integer*)lisp_builtin_cmp_util(rt, scope, a, user);
+	lisp_error_check(v);
 	if (v->type == type_integer) {
 		v->x = (v->x == 0);
 	}
@@ -259,6 +269,7 @@ static lisp_value *lisp_builtin_gt(lisp_runtime *rt, lisp_scope *scope,
 {
 	(void) user; /* unused */
 	lisp_integer *v = (lisp_integer*)lisp_builtin_cmp_util(rt, scope, a, user);
+	lisp_error_check(v);
 	if (v->type == type_integer) {
 		v->x = (v->x > 0);
 	}
@@ -270,6 +281,7 @@ static lisp_value *lisp_builtin_ge(lisp_runtime *rt, lisp_scope *scope,
 {
 	(void) user; /* unused */
 	lisp_integer *v = (lisp_integer*)lisp_builtin_cmp_util(rt, scope, a, user);
+	lisp_error_check(v);
 	if (v->type == type_integer) {
 		v->x = (v->x >= 0);
 	}
@@ -281,6 +293,7 @@ static lisp_value *lisp_builtin_lt(lisp_runtime *rt, lisp_scope *scope,
 {
 	(void) user; /* unused */
 	lisp_integer *v = (lisp_integer*)lisp_builtin_cmp_util(rt, scope, a, user);
+	lisp_error_check(v);
 	if (v->type == type_integer) {
 		v->x = (v->x < 0);
 	}
@@ -292,6 +305,7 @@ static lisp_value *lisp_builtin_le(lisp_runtime *rt, lisp_scope *scope,
 {
 	(void) user; /* unused */
 	lisp_integer *v = (lisp_integer*)lisp_builtin_cmp_util(rt, scope, a, user);
+	lisp_error_check(v);
 	if (v->type == type_integer) {
 		v->x = (v->x <= 0);
 	}
@@ -305,10 +319,11 @@ static lisp_value *lisp_builtin_if(lisp_runtime *rt, lisp_scope *scope,
 	lisp_value *condition, *body_true, *body_false;
 
 	if (!lisp_get_args((lisp_list*)a, "***", &condition, &body_true, &body_false)) {
-		return (lisp_value*) lisp_error_new(rt, "expected condition and two bodies");
+		return lisp_error_new(rt, "expected condition and two bodies");
 	}
 
 	condition = lisp_eval(rt, scope, condition);
+	lisp_error_check(condition);
 	if (condition->type == type_integer && ((lisp_integer*)condition)->x) {
 		return lisp_eval(rt, scope, body_true);
 	} else {
@@ -322,9 +337,10 @@ static lisp_value *lisp_builtin_null_p(lisp_runtime *rt, lisp_scope *scope,
 	(void) user; /* unused */
 	lisp_value *v;
 	lisp_list *args = (lisp_list*) lisp_eval_list(rt, scope, a);
+	lisp_error_check(args);
 
 	if (!lisp_get_args(args, "*", &v)) {
-		return (lisp_value*) lisp_error_new(rt, "expected one argument");
+		return lisp_error_new(rt, "expected one argument");
 	}
 
 	lisp_integer *result = (lisp_integer*) lisp_new(rt, type_integer);
@@ -389,11 +405,12 @@ static lisp_value *lisp_builtin_map(lisp_runtime *rt, lisp_scope *scope,
 	lisp_value *f;
 	lisp_list *ret = NULL, *args, *rv;
 	lisp_list *map_args = (lisp_list *) lisp_eval_list(rt, scope, a);
+	lisp_error_check(map_args);
 
 	/* Get the function from the first argument in the list. */
 	f = map_args->left;
 	if (map_args->right->type != type_list) {
-		return (lisp_value*) lisp_error_new(rt, "need at least two arguments");
+		return lisp_error_new(rt, "need at least two arguments");
 	}
 	map_args = (lisp_list*) map_args->right;
 	while ((args = get_quoted_left_items(rt, map_args)) != NULL) {
@@ -405,6 +422,7 @@ static lisp_value *lisp_builtin_map(lisp_runtime *rt, lisp_scope *scope,
 			ret = (lisp_list*) ret->right;
 		}
 		ret->left = lisp_call(rt, scope, f, (lisp_value*)args);
+		lisp_error_check(ret->left);
 		map_args = advance_lists(rt, map_args);
 	}
 	ret->right = lisp_nil_new(rt);
@@ -426,33 +444,35 @@ static lisp_value *lisp_builtin_reduce(lisp_runtime *rt, lisp_scope *scope, lisp
 {
 	(void) user; /* unused */
 	lisp_list *args = (lisp_list*) lisp_eval_list(rt, scope, a);
+	lisp_error_check(args);
 	int length = lisp_list_length(args);
 	lisp_value *callable, *initializer;
 	lisp_list *list;
 
 	if (length == 2) {
 		if (!lisp_get_args(args, "*l", &callable, &list)) {
-			return (lisp_value*) lisp_error_new(rt, "reduce: callable and list required");
+			return lisp_error_new(rt, "reduce: callable and list required");
 		}
 		if (lisp_list_length(list) < 2) {
-			return (lisp_value*) lisp_error_new(rt, "reduce: list must have at least 2 entries");
+			return lisp_error_new(rt, "reduce: list must have at least 2 entries");
 		}
 		initializer = list->left;
 		list = (lisp_list*)list->right;
 	} else if (length == 3) {
 		if (!lisp_get_args(args, "**l", &callable, &initializer, &list)) {
-			return (lisp_value*) lisp_error_new(rt, "reduce: callable, initializer, and list required");
+			return lisp_error_new(rt, "reduce: callable, initializer, and list required");
 		}
 		if (lisp_list_length(list) < 1) {
-			return (lisp_value*) lisp_error_new(rt, "reduce: list must have at least 1 entry");
+			return lisp_error_new(rt, "reduce: list must have at least 1 entry");
 		}
 	} else {
-		return (lisp_value*) lisp_error_new(rt, "reduce: 2 or 3 arguments required");
+		return lisp_error_new(rt, "reduce: 2 or 3 arguments required");
 	}
 
 	while (!lisp_nil_p((lisp_value*)list)) {
 		initializer = lisp_call(rt, scope, callable,
 		                        (lisp_value*) lisp_new_pair_list(rt, initializer, list->left));
+		lisp_error_check(initializer);
 		list = (lisp_list*) list->right;
 	}
 	return initializer;
@@ -463,9 +483,10 @@ static lisp_value *lisp_builtin_print(lisp_runtime *rt, lisp_scope *scope, lisp_
 	(void) user; /* unused */
 	lisp_value *v;
 	lisp_list *args = (lisp_list*) lisp_eval_list(rt, scope, a);
+	lisp_error_check(args);
 
 	if (!lisp_get_args(args, "*", &v)) {
-		return (lisp_value*) lisp_error_new(rt, "expected one argument");
+		return lisp_error_new(rt, "expected one argument");
 	}
 
 	lisp_print(stdout, v);

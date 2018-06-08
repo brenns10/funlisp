@@ -29,7 +29,7 @@ lisp_value *lisp_scope_lookup(lisp_runtime *rt, lisp_scope *scope,
 		if (scope->up) {
 			return lisp_scope_lookup(rt, scope->up, symbol);
 		} else {
-			return (lisp_value*)lisp_error_new(rt, "symbol not found in scope");
+			return lisp_error_new(rt, "symbol not found in scope");
 		}
 	} else {
 		return v;
@@ -55,14 +55,19 @@ void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
 
 lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *l)
 {
+	lisp_value *left, *right;
 	if (lisp_nil_p(l)) {
 		return l;
 	}
 	lisp_list *list = (lisp_list*) l;
-	lisp_list *result = (lisp_list*)lisp_new(rt, type_list);
-	result->left = lisp_eval(rt, scope, list->left);
-	result->right = lisp_eval_list(rt, scope, list->right);
-	return (lisp_value*) result;
+
+	left = lisp_eval(rt, scope, list->left);
+	lisp_error_check(left);
+
+	right = lisp_eval_list(rt, scope, list->right);
+	lisp_error_check(right);
+
+	return (lisp_value *) lisp_list_new(rt, left, right);
 }
 
 int lisp_list_length(lisp_list *list)
@@ -213,7 +218,7 @@ lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
 		rt, scope, lisp_symbol_new(rt, "main"));
 
 	if (main_func->type == type_error) {
-		return NULL;
+		return lisp_nil_new(rt);
 	}
 
 	args = lisp_list_of_strings(rt, argv, argc, 0);
@@ -281,13 +286,6 @@ char *lisp_symbol_get(lisp_symbol *sym)
 	return sym->sym;
 }
 
-lisp_error *lisp_error_new(lisp_runtime *rt, char *message)
-{
-	lisp_error *err = (lisp_error*)lisp_new(rt, type_error);
-	err->message = strdup(message);
-	return err;
-}
-
 char *lisp_error_get(lisp_error *err)
 {
 	return err->message;
@@ -336,4 +334,39 @@ void lisp_dump_stack(lisp_runtime *rt, lisp_list *stack, FILE *file)
 
 		stack = (lisp_list *) stack->right;
 	}
+}
+
+lisp_value *lisp_error_new(lisp_runtime *rt, char *message)
+{
+	rt->error = message;
+	rt->error_stack = rt->stack;
+	return NULL;
+}
+
+char *lisp_get_error(lisp_runtime *rt)
+{
+	return rt->error;
+}
+
+void lisp_clear_error(lisp_runtime *rt)
+{
+	rt->error = NULL;
+	rt->error_stack = NULL;
+	rt->error_line = 0;
+}
+
+void lisp_print_error(lisp_runtime *rt, FILE *file)
+{
+	if (!rt->error) {
+		fprintf(stderr, "BUG: lisp_print_error() expects error, found none\n");
+		return;
+	}
+
+	if (rt->error_line)
+		fprintf(file, "at line %d: ", rt->error_line);
+
+	fprintf(file, "%s\n\n", rt->error);
+
+	if (rt->error_stack)
+		lisp_dump_stack(rt, rt->error_stack, file);
 }
