@@ -597,11 +597,16 @@ lisp_value *lisp_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *value)
 lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope,
                       lisp_value *callable, lisp_value *args)
 {
+	lisp_value *rv;
 	if (callable->type == type_error) {
 		return callable;
 	}
-
-	return callable->type->call(rt, scope, callable, args);
+	rt->stack = lisp_list_new(rt, callable, (lisp_value *) rt->stack);
+	rt->stack_depth++;
+	rv = callable->type->call(rt, scope, callable, args);
+	rt->stack = (lisp_list*) rt->stack->right;
+	rt->stack_depth--;
+	return rv;
 }
 
 lisp_value *lisp_new(lisp_runtime *rt, lisp_type *typ)

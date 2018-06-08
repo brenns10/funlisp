@@ -17,6 +17,11 @@ void lisp_init(lisp_runtime *rt)
 	rt->tail = rt->nil;
 	rt->user = NULL;
 	rb_init(&rt->rb, sizeof(lisp_value*), 16);
+	rt->error= NULL;
+	rt->error_line = 0;
+	rt->error_stack = NULL;
+	rt->stack = (lisp_list *) rt->nil;
+	rt->stack_depth = 0;
 }
 
 void lisp_destroy(lisp_runtime *rt)

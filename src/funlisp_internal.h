@@ -35,14 +35,35 @@ struct lisp_value {
 
 /* A lisp_runtime is NOT a lisp_value! */
 struct lisp_runtime {
+	/* Maintains a list of all lisp values allocated with this runtime, so
+	 * that we can do garbage collection with mark-and-sweep.
+	 */
 	lisp_value *head;
 	lisp_value *tail;
-	void *user;
 
-	/* Some special values we don't want to lose track of */
+	/* This is used as a stack/queue for traversing objects during garbage
+	 * collection. It's allocated ahead of time to try to avoid allocating
+	 * memory as we do garbage collection
+	 */
+	struct ringbuf rb;
+
+	/* Nil is used so much that we keep a global instance and don't bother
+	 * ever freeing it. */
 	lisp_value *nil;
 
-	struct ringbuf rb;
+	/* Some data the user may want to keep track of. */
+	void *user;
+
+	/* Data we use for reporting errors. This is very single-threaded of me,
+	 * but it works for now.
+	 */
+	char *error;
+	unsigned int error_line;
+	lisp_list *error_stack;
+
+	/* Maintain a stack as we go, can dump it at any time if we want. */
+	lisp_list *stack;
+	unsigned int stack_depth;
 };
 
 /* The below ARE lisp_values! */
@@ -111,8 +132,6 @@ void lisp_destroy(lisp_runtime *rt);
 
 /* Shortcuts for type operations. */
 void lisp_free(lisp_value *value);
-lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope, lisp_value *callable,
-                      lisp_value *arguments);
 lisp_value *lisp_new(lisp_runtime *rt, lisp_type *typ);
 
 #endif
