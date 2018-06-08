@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "funlisp_internal.h"
 #include "hashtable.h"
@@ -320,4 +321,19 @@ lisp_integer *lisp_integer_new(lisp_runtime *rt, int n)
 int lisp_integer_get(lisp_integer *integer)
 {
 	return integer->x;
+}
+
+void lisp_dump_stack(lisp_runtime *rt, lisp_list *stack, FILE *file)
+{
+	if (!stack)
+		stack = rt->stack;
+
+	fprintf(file, "Stack trace (most recent call first):\n");
+	while (!lisp_nil_p((lisp_value *) stack)) {
+		fprintf(file, "  ");
+		lisp_print(file, stack->left);
+		fprintf(file, "\n");
+
+		stack = (lisp_list *) stack->right;
+	}
 }

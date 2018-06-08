@@ -44,3 +44,9 @@ Embedding Tools
 
 .. doxygengroup:: embed
    :content-only:
+
+Miscellaneous Functions
+-----------------------
+
+.. doxygengroup:: misc
+   :content-only:

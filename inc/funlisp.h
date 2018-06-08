@@ -690,6 +690,23 @@ lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value);
 
 /**
  * @}
+ * @defgroup misc Miscellaneous Functions
+ * @{
+ */
+
+/**
+ * Dump the execution stack to a file. This is useful if you want to print a
+ * stack trace at your current location. This functionality can also be accessed
+ * via the ``dump-stack`` builtin function.
+ * @param rt runtime
+ * @param stack When NULL, the runtime's execution stack is used. When non-NULL,
+ * the @a stack argument is used to specify what stack to dump.
+ * @param file where to dump stack trace to
+ */
+void lisp_dump_stack(lisp_runtime *rt, lisp_list *stack, FILE *file);
+
+/**
+ * @}
  */
 
 #endif

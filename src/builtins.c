@@ -4,6 +4,8 @@
  * Stephen Brennan <stephen@brennan.io>
  */
 
+#include <stdio.h>
+
 #include "funlisp_internal.h"
 
 static lisp_value *lisp_builtin_eval(lisp_runtime *rt, lisp_scope *scope,
@@ -471,6 +473,17 @@ static lisp_value *lisp_builtin_print(lisp_runtime *rt, lisp_scope *scope, lisp_
 	return lisp_nil_new(rt);
 }
 
+static lisp_value *lisp_builtin_dump_stack(lisp_runtime *rt, lisp_scope *scope,
+                                           lisp_value *a, void *user)
+{
+	/* NB: This is very debugging oriented. We don't even eval arguments! */
+	(void) scope; /* unused args */
+	(void) a;
+	(void) user;
+	lisp_dump_stack(rt, NULL, stderr);
+	return lisp_nil_new(rt);
+}
+
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
 	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval, NULL);
@@ -495,4 +508,5 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "map", lisp_builtin_map, NULL);
 	lisp_scope_add_builtin(rt, scope, "reduce", lisp_builtin_reduce, NULL);
 	lisp_scope_add_builtin(rt, scope, "print", lisp_builtin_print, NULL);
+	lisp_scope_add_builtin(rt, scope, "dump-stack", lisp_builtin_dump_stack, NULL);
 }
