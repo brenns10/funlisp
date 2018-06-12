@@ -66,7 +66,8 @@ steps:
 3. Parse the input. Parsed code is simply a :c:type:`lisp_value` like any other
    language object.
 4. Evaluate the input within the global scope.
-5. Print the output, and a trailing newline.
+5. If an error occurred, print it and continue. If nothing of interest is
+   returned, do nothing. Otherwise, print the output, and a trailing newline.
 6. Mark everything in scope, then sweep unreachable objects.
 7. Repeat steps 2-7 for each line of input.
 8. Destroy the language runtime to finish cleaning up memory.
@@ -77,6 +78,11 @@ without any custom functions. It uses the ``editline`` implementation of the
 
 .. literalinclude:: ../tools/repl.c
   :language: C
+
+Notice here that :c:func:`lisp_eval()` returns NULL in case of an error. If that
+happens, then you can use :c:func:`lisp_print_error()` to print a user-facing
+error message, and :c:func:`lisp_clear_error()` to clear the error from the
+interpreter state.
 
 The Script Runner
 -----------------
@@ -118,6 +124,15 @@ want to evaluate them all before continuing with the logic of the function. You
 can do this individually with the :c:func:`lisp_eval()` function, or just
 evaluate the whole list of arguments with the :c:func:`lisp_eval_list()`
 function.
+
+.. warning::
+
+  As we've noticed in the previous example programs, evaluating code can return
+  ``NULL`` if an error (e.g. an exception of some sort) occurs. A well-behaved
+  builtin will test the result of all calls to :c:func:`lisp_eval()` and
+  :c:func:`lisp_call()` using the macro ``lisp_error_check()`` in order to
+  propagate those errors back to the user. :c:func:`lisp_eval_list()` propagates
+  errors back, and so it should be error checked as well.
 
 The one exception to evaluating all of your arguments is if you're defining some
 sort of syntactic construct. An example of this is the if-statement. The if

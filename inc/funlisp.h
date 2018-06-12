@@ -168,9 +168,15 @@ void lisp_print(FILE *f, lisp_value *value);
  * others.  For example, evaluating a scope will not work. However, evaluating a
  * symbol will look it up in the current scope, and evaluating list ``l`` will
  * attempt to call ``(car l)`` with arguments ``(cdr l)``.
- * @param rt runtime associated with scope and value @param scope the scope to
- * use for evaluation (used when looking up symbols) @param value the value
- * (code generally) to evaluate @return the result of evaluating value in scope
+ *
+ * When an error occurs during execution, this function returns NULL and sets
+ * the internal error details within the runtime.
+ *
+ * @param rt runtime associated with scope and value
+ * @param scope the scope to use for evaluation (used when looking up symbols)
+ * @param value the value to evaluate
+ * @return the result of evaluating @a value in @a scope
+ * @retval NULL when an error occurs
  */
 lisp_value *lisp_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *value);
 
@@ -183,6 +189,9 @@ lisp_value *lisp_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *value);
  * @param callable value to call
  * @param arguments a ::lisp_list containing arguments (which *have not yet been
  * evaluated*)
+ * @return the result of calling @a callable with args @a arguments in scope @a
+ * scope.
+ * @retval NULL when an error occurs
  */
 lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope, lisp_value *callable,
                       lisp_value *arguments);
@@ -543,6 +552,7 @@ void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
  * @param scope scope to evaluate within
  * @param list list of un-evaluated function arguments
  * @return list of evaluated function arguments
+ * @retval NULL if an error occured during evaluation
  */
 lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *list);
 
@@ -671,7 +681,7 @@ lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value);
 
 /**
  * @}
- * @defgroup misc Miscellaneous Functions
+ * @defgroup error Error Handling
  * @{
  */
 
@@ -690,6 +700,13 @@ void lisp_dump_stack(lisp_runtime *rt, lisp_list *stack, FILE *file);
  * A macro for error checking the return value of a lisp_eval() or lisp_call()
  * function. This will return NULL when its argumnet is NULL, helping functions
  * short-circuit in the case of an error.
+ *
+ * @code
+ * lisp_value *v = lisp_eval(rt, my_code, my_scope);
+ * lisp_error_check(v);
+ * // continue using v
+ * @endcode
+ *
  * @param value value to error check
  */
 #define lisp_error_check(value) do { \

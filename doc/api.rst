@@ -45,8 +45,8 @@ Embedding Tools
 .. doxygengroup:: embed
    :content-only:
 
-Miscellaneous Functions
+Error Handling
 -----------------------
 
-.. doxygengroup:: misc
+.. doxygengroup:: error
    :content-only:
