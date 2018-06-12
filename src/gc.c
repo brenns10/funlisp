@@ -38,9 +38,11 @@ void lisp_mark(lisp_runtime *rt, lisp_value *v)
 	rt->has_marked = 1;
 
 	while (rt->rb.count > 0) {
+		struct iterator it;
+
 		rb_pop_front(&rt->rb, &v);
 		v->mark = GC_MARKED;
-		struct iterator it = v->type->expand(v);
+		it = v->type->expand(v);
 		while (it.has_next(&it)) {
 			v = it.next(&it);
 			if (v->mark == GC_NOMARK) {
