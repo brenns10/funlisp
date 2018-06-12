@@ -21,7 +21,7 @@ static lisp_value *eval_error(lisp_runtime *rt, lisp_scope *s, lisp_value *v)
 {
 	(void)s;
 	(void)v;
-	return (lisp_value*) lisp_error_new(rt, "cannot evaluate this object");
+	return lisp_error_new(rt, "cannot evaluate this object");
 }
 
 static lisp_value *eval_same(lisp_runtime *rt, lisp_scope *s, lisp_value *v)
@@ -37,16 +37,7 @@ static lisp_value *call_error(lisp_runtime *rt, lisp_scope *s, lisp_value *c,
 	(void)s;
 	(void)c;
 	(void)v;
-	return (lisp_value*) lisp_error_new(rt, "not callable!");
-}
-
-static lisp_value *call_same(lisp_runtime *rt, lisp_scope *s, lisp_value *c,
-                             lisp_value *v)
-{
-	(void)rt;
-	(void)s;
-	(void)v;
-	return c;
+	return lisp_error_new(rt, "not callable!");
 }
 
 static bool has_next_index_lt_state(struct iterator *iter)
@@ -193,15 +184,15 @@ static lisp_value *list_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *v)
 	lisp_list *list = (lisp_list*) v;
 
 	if (lisp_nil_p(v)) {
-		return (lisp_value*) lisp_error_new(rt, "cannot call empty list");
+		return lisp_error_new(rt, "Cannot call empty list");
 	}
 
 	if (list->right->type != type_list) {
-		return (lisp_value*) lisp_error_new(rt, "bad function call syntax");
+		return lisp_error_new(rt, "You may not call with an s-expression");
 	}
 	lisp_value *callable = lisp_eval(rt, scope, list->left);
-	lisp_value *rv = lisp_call(rt, scope, callable, list->right);
-	return rv;
+	lisp_error_check(callable);
+	return lisp_call(rt, scope, callable, list->right);
 }
 
 static void list_print_internal(FILE *f, lisp_list *list)
@@ -328,47 +319,6 @@ static void symbol_free(void *v)
 	if (symbol->can_free)
 		free(symbol->sym);
 	free(symbol);
-}
-
-/*
- * error
- */
-
-static void error_print(FILE *f, lisp_value *v);
-static lisp_value *error_new(void);
-static void error_free(void *v);
-
-static lisp_type type_error_obj = {
-	.type=&type_type_obj,
-	.name="error",
-	.print=error_print,
-	.new=error_new,
-	.eval=eval_same,
-	.free=error_free,
-	.call=call_same,
-	.expand=iterator_empty,
-};
-lisp_type *type_error = &type_error_obj;
-
-static void error_print(FILE *f, lisp_value *v)
-{
-	lisp_error *error = (lisp_error*) v;
-	fprintf(f, "error: %s", error->message);
-}
-
-static lisp_value *error_new(void)
-{
-	lisp_error *error = malloc(sizeof(lisp_error));
-	error->type = type_error;
-	error->message = NULL;
-	return (lisp_value*)error;
-}
-
-static void error_free(void *v)
-{
-	lisp_error *error = (lisp_error*) v;
-	free(error->message);
-	free(error);
 }
 
 /*
@@ -526,6 +476,7 @@ static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
 {
 	lisp_lambda *lambda = (lisp_lambda*) c;
 	lisp_list *argvalues = (lisp_list*)lisp_eval_list(rt, scope, arguments);
+	lisp_error_check(argvalues);
 	lisp_scope *inner = (lisp_scope*)lisp_new(rt, type_scope);
 	inner->up = lambda->closure;
 
@@ -537,10 +488,10 @@ static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
 	}
 
 	if (!lisp_nil_p((lisp_value*)it1)) {
-		return (lisp_value*) lisp_error_new(rt, "not enough arguments");
+		return lisp_error_new(rt, "not enough arguments to lambda call");
 	}
 	if (!lisp_nil_p((lisp_value*)it2)) {
-		return (lisp_value*) lisp_error_new(rt, "too many arguments");
+		return lisp_error_new(rt, "too many arguments to lambda call");
 	}
 
 	return lisp_eval(rt, inner, lambda->code);
@@ -597,11 +548,18 @@ lisp_value *lisp_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *value)
 lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope,
                       lisp_value *callable, lisp_value *args)
 {
-	if (callable->type == type_error) {
-		return callable;
-	}
+	lisp_value *rv;
+	/* create new stack frame */
+	rt->stack = lisp_list_new(rt, callable, (lisp_value *) rt->stack);
+	rt->stack_depth++;
 
-	return callable->type->call(rt, scope, callable, args);
+	/* make function call */
+	rv = callable->type->call(rt, scope, callable, args);
+
+	/* get rid of stack frame */
+	rt->stack = (lisp_list*) rt->stack->right;
+	rt->stack_depth--;
+	return rv;
 }
 
 lisp_value *lisp_new(lisp_runtime *rt, lisp_type *typ)

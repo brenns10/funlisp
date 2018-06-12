@@ -52,7 +52,10 @@ int main(int argc, char **argv)
 		if (!value)
 			continue; /* blank line */
 		lisp_value *result = lisp_eval(rt, scope, value);
-		if (!lisp_nil_p(result)) {
+		if (!result) {
+			lisp_print_error(rt, stderr);
+			lisp_error_clear(rt);
+		} else if (!lisp_nil_p(result)) {
 			lisp_print(stdout, result);
 			fprintf(stdout, "\n");
 		}

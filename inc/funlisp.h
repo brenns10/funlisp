@@ -117,14 +117,6 @@ typedef struct lisp_scope lisp_scope;
 typedef struct lisp_symbol lisp_symbol;
 
 /**
- * Error is a lisp type returned whenever (shockingly) an error occurs. This is
- * a bit of a hack to enable a base support for error handling. Errors may have
- * a string message.
- * @ingroup types
- */
-typedef struct lisp_error lisp_error;
-
-/**
  * ::lisp_integer contains an int object of whatever size the C implementation
  * supports.
  * @ingroup types
@@ -176,20 +168,30 @@ void lisp_print(FILE *f, lisp_value *value);
  * others.  For example, evaluating a scope will not work. However, evaluating a
  * symbol will look it up in the current scope, and evaluating list ``l`` will
  * attempt to call ``(car l)`` with arguments ``(cdr l)``.
- * @param rt runtime associated with scope and value @param scope the scope to
- * use for evaluation (used when looking up symbols) @param value the value
- * (code generally) to evaluate @return the result of evaluating value in scope
+ *
+ * When an error occurs during execution, this function returns NULL and sets
+ * the internal error details within the runtime.
+ *
+ * @param rt runtime associated with scope and value
+ * @param scope the scope to use for evaluation (used when looking up symbols)
+ * @param value the value to evaluate
+ * @return the result of evaluating @a value in @a scope
+ * @retval NULL when an error occurs
  */
 lisp_value *lisp_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *value);
 
 /**
  * Call a callable object with a list of arguments. Many data types are not
- * callable, in which case a ::lisp_error is returned.
+ * callable, in which case a NULL is returned and an error is set within the
+ * runtime.
  * @param rt runtime
  * @param scope scope in which we are being evaluated
  * @param callable value to call
  * @param arguments a ::lisp_list containing arguments (which *have not yet been
  * evaluated*)
+ * @return the result of calling @a callable with args @a arguments in scope @a
+ * scope.
+ * @retval NULL when an error occurs
  */
 lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope, lisp_value *callable,
                       lisp_value *arguments);
@@ -259,11 +261,11 @@ void lisp_scope_bind(lisp_scope *scope, lisp_symbol *symbol, lisp_value *value);
 /**
  * Look up a symbol within a scope. If it is not found in this scope, look
  * within the parent scope etc, until it is found. If it is not found at all,
- * return a ::lisp_error object.
+ * return NULL and set an error within the interpreter.
  * @param rt runtime
  * @param scope scope to look in
  * @param symbol symbol to look up
- * @return value found, or a ::lisp_error when not found
+ * @return value found, or a NULL when not found
  */
 lisp_value *lisp_scope_lookup(lisp_runtime *rt, lisp_scope *scope,
                               lisp_symbol *symbol);
@@ -273,7 +275,7 @@ lisp_value *lisp_scope_lookup(lisp_runtime *rt, lisp_scope *scope,
  * @param rt runtime
  * @param scope scope to look in
  * @param name string name to look up
- * @return value found, or a ::lisp_error when not found
+ * @return value found, or NULL when not found
  */
 lisp_value *lisp_scope_lookup_string(lisp_runtime *rt, lisp_scope *scope, char *name);
 
@@ -392,12 +394,6 @@ int lisp_nil_p(lisp_value *l);
 extern lisp_type *type_symbol;
 
 /**
- * Type object of ::lisp_error, for type checking.
- * @sa lisp_is()
- */
-extern lisp_type *type_error;
-
-/**
  * Type object of ::lisp_integer, for type checking.
  * @sa lisp_is()
  */
@@ -486,14 +482,7 @@ char *lisp_symbol_get(lisp_symbol *s);
  * @param message message to use for creating the error
  * @return a new error
  */
-lisp_error  *lisp_error_new(lisp_runtime *rt, char *message);
-
-/**
- * Return the message from an error.
- * @param e the error to retrieve the message from
- * @return the message contained in the error
- */
-char *lisp_error_get(lisp_error *e);
+lisp_value  *lisp_error_new(lisp_runtime *rt, char *message);
 
 /**
  * Create a new integer.
@@ -563,6 +552,7 @@ void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
  * @param scope scope to evaluate within
  * @param list list of un-evaluated function arguments
  * @return list of evaluated function arguments
+ * @retval NULL if an error occured during evaluation
  */
 lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *list);
 
@@ -638,7 +628,8 @@ lisp_value *lisp_load_file(lisp_runtime *rt, lisp_scope *scope, FILE *input);
  * @param argc number of arguments
  * @param argv NULL-terminated argument list
  * @returns result of evaluation
- * @retval NULL if no main function existed
+ * @retval a nil list when there is no main symbol
+ * @retval NULL on error
  */
 lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
                                     int argc, char **argv);
@@ -687,6 +678,64 @@ void lisp_sweep(lisp_runtime *rt);
  * @return value but quoted
  */
 lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value);
+
+/**
+ * @}
+ * @defgroup error Error Handling
+ * @{
+ */
+
+/**
+ * Dump the execution stack to a file. This is useful if you want to print a
+ * stack trace at your current location. This functionality can also be accessed
+ * via the ``dump-stack`` builtin function.
+ * @param rt runtime
+ * @param stack When NULL, the runtime's execution stack is used. When non-NULL,
+ * the @a stack argument is used to specify what stack to dump.
+ * @param file where to dump stack trace to
+ */
+void lisp_dump_stack(lisp_runtime *rt, lisp_list *stack, FILE *file);
+
+/**
+ * A macro for error checking the return value of a lisp_eval() or lisp_call()
+ * function. This will return NULL when its argumnet is NULL, helping functions
+ * short-circuit in the case of an error.
+ *
+ * @code
+ * lisp_value *v = lisp_eval(rt, my_code, my_scope);
+ * lisp_error_check(v);
+ * // continue using v
+ * @endcode
+ *
+ * @param value value to error check
+ */
+#define lisp_error_check(value) do { \
+		if (!value) { \
+			return NULL; \
+		} \
+	} while (0)
+
+/**
+ * Prints the last error reported to the runtime, on @a file. If there is no
+ * error, this prints a loud BUG message to FILE, indicating that an error was
+ * expected but not found.
+ * @param rt runtime
+ * @param file file to print error to (usually stderr)
+ */
+void lisp_print_error(lisp_runtime *rt, FILE *file);
+
+/**
+ * Returns the error text of the current error registered with the runtime.
+ * @param rt runtime
+ * @return error string
+ */
+char *lisp_get_error(lisp_runtime *rt);
+
+/**
+ * Clears the error in the runtime.
+ * @param rt runtime
+ */
+void lisp_clear_error(lisp_runtime *rt);
 
 /**
  * @}

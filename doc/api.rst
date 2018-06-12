@@ -44,3 +44,9 @@ Embedding Tools
 
 .. doxygengroup:: embed
    :content-only:
+
+Error Handling
+-----------------------
+
+.. doxygengroup:: error
+   :content-only:
