@@ -15,7 +15,12 @@
 #include "iter.h"
 #include "hashtable.h"
 
+/*
+ * This is the space we allow for the "marker" in front of each hash
+ * table entry (HT_EMPTY, HT_FULL, HT_GRAVE).
+ */
 #define HTA_KEY_OFFSET 1
+
 #define HASH_TABLE_INITIAL_SIZE 31
 #define HASH_TABLE_MAX_LOAD_FACTOR 0.5
 
@@ -23,15 +28,13 @@
 #define HT_FULL 1
 #define HT_GRAVE 2
 
-#define HTA_MARK(t, i) ((int8_t*)t->table)[i]
-
 #define nelem(x) (sizeof(x)/sizeof((x)[0]))
 
 /*
  * private functions
  */
 
-const unsigned long ht_primes[] = {
+static const unsigned long ht_primes[] = {
 	31UL, /* 2^5 */
 	61UL,
 	127UL,
@@ -89,15 +92,47 @@ unsigned long ht_next_size(unsigned long current)
 	return ht_primes[curridx + 1];
 }
 
-unsigned long item_size(const struct hashtable *obj)
-{
-	return HTA_KEY_OFFSET + obj->key_size + obj->value_size;
-}
+/*
+ * The size of an "item" in the table. This consists of the size of the
+ * "marker", the size of the key, and the size of the value.
+ */
+#define item_size(ht) (HTA_KEY_OFFSET + (ht)->key_size + (ht)->value_size)
 
-unsigned long convert_idx(const struct hashtable *obj, unsigned long orig)
-{
-	return orig * item_size(obj);
-}
+/**
+ * Return the mark at index i.
+ * @param ht Pointer to struct hash_table
+ * @param buf Pointer to the actual buffer containing data (usually just
+ * ht->table)
+ * @param i Logical index of the data
+ */
+#define mark_at_buf(ht, buf, i) \
+	(*(int8_t*) (((char*)buf) + i * item_size(ht)))
+
+/**
+ * Return the mark at index i.
+ * @param ht Pointer to struct hash table
+ * @param i Logical index
+ */
+#define mark_at(ht, i) mark_at_buf(ht, ht->table, i)
+
+/*
+ * Return a pointer to the key at index i.
+ */
+#define key_ptr_buf(ht, buf, i) \
+	(void*) (((char*)buf) + i * item_size(ht) + HTA_KEY_OFFSET)
+
+#define key_ptr(ht, i) key_ptr_buf(ht, (ht)->table, i)
+/*
+ * Return a pointer to the value at index i.
+ */
+#define val_ptr_buf(ht, buf, i) \
+	(void*) ( \
+		((char*)buf) + \
+		i * item_size(ht) + \
+		HTA_KEY_OFFSET + \
+		(ht)->key_size )
+
+#define val_ptr(ht, i) val_ptr_buf(ht, (ht)->table, i)
 
 /**
  * @brief Find the proper index for insertion into the table.
@@ -107,7 +142,6 @@ unsigned long convert_idx(const struct hashtable *obj, unsigned long orig)
 unsigned int ht_find_insert(const struct hashtable *obj, void *key)
 {
 	unsigned long index = obj->hash(key) % obj->allocated;
-	unsigned long bufidx = convert_idx(obj, index);
 	unsigned int j = 1;
 
 	/*
@@ -116,8 +150,8 @@ unsigned int ht_find_insert(const struct hashtable *obj, void *key)
 	 * until (cell.mark != full || cell.key == key)
 	 * while (cell.mark == full && cell.key != key)
 	 */
-	while (HTA_MARK(obj, bufidx) == HT_FULL &&
-	       obj->equal(key, obj->table + bufidx + HTA_KEY_OFFSET) != 0) {
+	while (mark_at(obj, index) == HT_FULL &&
+	       obj->equal(key, key_ptr(obj, index)) != 0) {
 		/*
 		 * This is quadratic probing, but I'm avoiding squaring numbers:
 		 * j:     1, 3, 5, 7,  9, 11, ..
@@ -125,7 +159,6 @@ unsigned int ht_find_insert(const struct hashtable *obj, void *key)
 		 */
 		index = (index + j) % obj->allocated;
 		j += 2;
-		bufidx = convert_idx(obj, index);
 	}
 
 	return index;
@@ -139,7 +172,6 @@ unsigned int ht_find_insert(const struct hashtable *obj, void *key)
 unsigned int ht_find_retrieve(const struct hashtable *obj, void *key)
 {
 	unsigned long index = obj->hash(key) % obj->allocated;
-	unsigned long bufidx = convert_idx(obj, index);
 	unsigned int j = 1;
 
 	/*
@@ -148,8 +180,8 @@ unsigned int ht_find_retrieve(const struct hashtable *obj, void *key)
 	 * until (cell.mark == empty || cell.key == key)
 	 * while (cell.mark != empty && cell.key != key)
 	 */
-	while (HTA_MARK(obj, bufidx) != HT_EMPTY &&
-	       obj->equal(key, obj->table + bufidx + HTA_KEY_OFFSET) != 0) {
+	while (mark_at(obj, index) != HT_EMPTY &&
+	       obj->equal(key, key_ptr(obj, index)) != 0) {
 		/*
 		 * This is quadratic probing, but I'm avoiding squaring numbers:
 		 * j:     1, 3, 5, 7,  9, 11, ..
@@ -157,7 +189,6 @@ unsigned int ht_find_retrieve(const struct hashtable *obj, void *key)
 		 */
 		index = (index + j) % obj->allocated;
 		j += 2;
-		bufidx = convert_idx(obj, index);
 	}
 
 	return index;
@@ -171,7 +202,7 @@ unsigned int ht_find_retrieve(const struct hashtable *obj, void *key)
 void ht_resize(struct hashtable *table)
 {
 	void *old_table;
-	unsigned long index, old_allocated, bufidx;
+	unsigned long index, old_allocated;
 
 	/* Step one: allocate new space for the table */
 	old_table = table->table;
@@ -182,10 +213,10 @@ void ht_resize(struct hashtable *table)
 
 	/* Step two, add the old items to the new table. */
 	for (index = 0; index < old_allocated; index++) {
-		bufidx = convert_idx(table, index);
-		if (((int8_t*)old_table)[bufidx] == HT_FULL) {
-			ht_insert(table, old_table + bufidx + HTA_KEY_OFFSET,
-			          old_table + bufidx + HTA_KEY_OFFSET + table->value_size);
+		
+		if (mark_at_buf(table, old_table, index) == HT_FULL) {
+			ht_insert(table, key_ptr_buf(table, old_table, index),
+					val_ptr_buf(table, old_table, index));
 		}
 	}
 
@@ -250,7 +281,7 @@ void ht_delete(struct hashtable *table)
 
 void ht_insert(struct hashtable *table, void *key, void *value)
 {
-	unsigned long index, bufidx;
+	unsigned long index;
 	if (ht_load_factor(table) > HASH_TABLE_MAX_LOAD_FACTOR) {
 		ht_resize(table);
 	}
@@ -260,10 +291,8 @@ void ht_insert(struct hashtable *table, void *key, void *value)
 	 * it, we update the existing key.
 	 */
 	index = ht_find_retrieve(table, key);
-	bufidx = convert_idx(table, index);
-	if (HTA_MARK(table, bufidx) == HT_FULL) {
-		memcpy(table->table + bufidx + HTA_KEY_OFFSET + table->key_size,
-		       value, table->value_size);
+	if (mark_at(table, index) == HT_FULL) {
+		memcpy(val_ptr(table, index), value, table->value_size);
 		return;
 	}
 
@@ -272,11 +301,9 @@ void ht_insert(struct hashtable *table, void *key, void *value)
 	 * gravestone.
 	 */
 	index = ht_find_insert(table, key);
-	bufidx = convert_idx(table, index);
-	HTA_MARK(table, bufidx) = HT_FULL;
-	memcpy(table->table + bufidx + HTA_KEY_OFFSET, key, table->key_size);
-	memcpy(table->table + bufidx + HTA_KEY_OFFSET + table->key_size, value,
-	       table->value_size);
+	mark_at(table, index) = HT_FULL;
+	memcpy(key_ptr(table, index), key, table->key_size);
+	memcpy(val_ptr(table, index), value, table->value_size);
 	table->length++;
 }
 
@@ -288,15 +315,14 @@ void ht_insert_ptr(struct hashtable *table, void *key, void *value)
 int ht_remove(struct hashtable *table, void *key)
 {
 	unsigned long index = ht_find_retrieve(table, key);
-	unsigned long bufidx = convert_idx(table, index);
 
 	/* If the returned slot isn't full, that means we couldn't find it. */
-	if (HTA_MARK(table, bufidx) != HT_FULL) {
+	if (mark_at(table, index) != HT_FULL) {
 		return -1;
 	}
 
 	/* Mark the slot with a "grave stone", indicating it is deleted. */
-	HTA_MARK(table, bufidx) = HT_GRAVE;
+	mark_at(table, index) = HT_GRAVE;
 	table->length--;
 	return 0;
 }
@@ -309,15 +335,14 @@ int ht_remove_ptr(struct hashtable *table, void *key)
 void *ht_get(struct hashtable const *table, void *key)
 {
 	unsigned long index = ht_find_retrieve(table, key);
-	unsigned long bufidx = convert_idx(table, index);
 
 	/* If the slot is not marked full, we didn't find the key. */
-	if (HTA_MARK(table, bufidx) != HT_FULL) {
+	if (mark_at(table, index) != HT_FULL) {
 		return NULL;
 	}
 
 	/* Otherwise, return the value. */
-	return table->table + bufidx + HTA_KEY_OFFSET + table->key_size;
+	return val_ptr(table, index);
 }
 
 void *ht_get_ptr(struct hashtable const *table, void *key)
@@ -367,19 +392,23 @@ int ht_int_comp(void *left, void *right)
 void ht_print(FILE* f, struct hashtable const *table, print_t key, print_t value,
               int full_mode)
 {
-	unsigned long i, bufidx;
+	unsigned long i;
 	char *MARKS[] = {"EMPTY", " FULL", "GRAVE"};
 
+	printf("table size %lu, allocated %lu\n", table->length, table->allocated);
 	for (i = 0; i < table->allocated; i++) {
-		bufidx = convert_idx(table, i);
-		int8_t mark = HTA_MARK(table, bufidx);
+		int8_t mark = mark_at(table, i);
 		if (full_mode || mark == HT_FULL) {
-			printf("[%04lu|%05lu|%s]:\n", i, bufidx, MARKS[mark]);
+			printf("[%04lu|%p|%p|%s]:\n",
+					i,
+					key_ptr(table, i),
+					val_ptr(table, i),
+					MARKS[mark]);
 			if (mark == HT_FULL) {
 				printf("  key: ");
-				if (key) key(f, table->table + bufidx + HTA_KEY_OFFSET);
+				if (key) key(f, key_ptr(table, i));
 				printf("\n  value: ");
-				if (value) value(f, table->table + bufidx + HTA_KEY_OFFSET + table->key_size);
+				if (value) value(f, val_ptr(table, i));
 				printf("\n");
 			}
 		}
@@ -388,23 +417,53 @@ void ht_print(FILE* f, struct hashtable const *table, print_t key, print_t value
 
 static void *ht_next(struct iterator *iter)
 {
-	struct hashtable *table = iter->ds;
-	unsigned long bufidx;
-	int8_t mark = HT_EMPTY;
+	/*
+	 * This function can be confusing, and it causes difficult-to-debug
+	 * issues when you mess it up even a little bit.
+	 *
+	 * The iterator "next()" operation returns from the next available full
+	 * slot, and leaves iter->state_int pointing ONE AFTER that slot (so
+	 * that the following call will return from the next available full
+	 * slot, etc). For example:
+	 *
+	 * example table before ht_next() is called (arrow indicates
+	 * iter->state_int)
+	 *      FULL
+	 *   -> EMPTY
+	 *      EMPTY
+	 *      FULL *
+	 *      EMPTY
+	 *
+	 * afterwards, the starred entry is returned
+	 *      FULL
+	 *      EMPTY
+	 *      EMPTY
+	 *      FULL *
+	 *   -> EMPTY
+	 */
+	void *rv;
+	struct hashtable *table;
+	int8_t mark;
 
-	for (; mark != HT_FULL && iter->state_int < (int)table->allocated; iter->state_int++) {
-		bufidx = convert_idx(table, iter->state_int);
-		mark = HTA_MARK(table, bufidx);
+	table = iter->ds;
+
+	while (iter->state_int < (int)table->allocated &&
+			mark_at(table, iter->state_int) != HT_FULL) {
+		iter->state_int++;
 	}
+	mark = mark_at(table, iter->state_int);
 
 	if (mark != HT_FULL) return NULL;
 
 	iter->index++;
 
 	if (!iter->state_ptr)
-		return table->table + bufidx + HTA_KEY_OFFSET;
+		rv = key_ptr(table, iter->state_int);
 	else
-		return table->table + bufidx + HTA_KEY_OFFSET + table->key_size;
+		rv = val_ptr(table, iter->state_int);
+
+	iter->state_int++;
+	return rv;
 }
 
 static void *ht_next_ptr(struct iterator *iter)
@@ -423,56 +482,52 @@ static bool ht_has_next(struct iterator *iter)
 
 struct iterator ht_iter_keys(struct hashtable *table)
 {
-	struct iterator it = {
-		.ds = table,
-		.index = 0,
-		.state_int = 0,
-		.state_ptr = NULL, /* when null, return keys, else return values */
-		.has_next = ht_has_next,
-		.next = ht_next,
-		.close = iterator_close_noop,
-	};
+	struct iterator it = {0};
+	it.ds = table;
+	it.index = 0;
+	it.state_int = 0;
+	it.state_ptr = NULL; /* when null, return keys, else return values */
+	it.has_next = ht_has_next;
+	it.next = ht_next;
+	it.close = iterator_close_noop;
 	return it;
 }
 
 struct iterator ht_iter_keys_ptr(struct hashtable *table)
 {
-	struct iterator it = {
-		.ds = table,
-		.index = 0,
-		.state_int = 0,
-		.state_ptr = NULL, /* when null, return keys, else return values */
-		.has_next = ht_has_next,
-		.next = ht_next_ptr,
-		.close = iterator_close_noop,
-	};
+	struct iterator it = {0};
+	it.ds = table;
+	it.index = 0;
+	it.state_int = 0;
+	it.state_ptr = NULL; /* when null, return keys, else return values */
+	it.has_next = ht_has_next;
+	it.next = ht_next_ptr;
+	it.close = iterator_close_noop;
 	return it;
 }
 
 struct iterator ht_iter_values(struct hashtable *table)
 {
-	struct iterator it = {
-		.ds = table,
-		.index = 0,
-		.state_int = 0,
-		.state_ptr = table, /* when null, return keys, else return values */
-		.has_next = ht_has_next,
-		.next = ht_next,
-		.close = iterator_close_noop,
-	};
+	struct iterator it = {0};
+	it.ds = table;
+	it.index = 0;
+	it.state_int = 0;
+	it.state_ptr = table; /* when null, return keys, else return values */
+	it.has_next = ht_has_next;
+	it.next = ht_next;
+	it.close = iterator_close_noop;
 	return it;
 }
 
 struct iterator ht_iter_values_ptr(struct hashtable *table)
 {
-	struct iterator it = {
-		.ds = table,
-		.index = 0,
-		.state_int = 0,
-		.state_ptr = table, /* when null, return keys, else return values */
-		.has_next = ht_has_next,
-		.next = ht_next_ptr,
-		.close = iterator_close_noop,
-	};
+	struct iterator it = {0};
+	it.ds = table;
+	it.index = 0;
+	it.state_int = 0;
+	it.state_ptr = table; /* when null, return keys, else return values */
+	it.has_next = ht_has_next;
+	it.next = ht_next_ptr;
+	it.close = iterator_close_noop;
 	return it;
 }
