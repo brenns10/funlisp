@@ -5,7 +5,7 @@
 .PHONY: all clean doc
 
 CC=gcc
-CFLAGS= -std=c89 -Wall -Wextra -fPIC -Iinc -c
+CFLAGS= -std=c89 -Wall -Wextra -pedantic -fPIC -Iinc -c
 SRCS=$(wildcard src/*.c)
 OBJS=$(patsubst src/%.c,obj/%.o,$(SRCS))
 
