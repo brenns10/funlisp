@@ -31,38 +31,38 @@
  * private functions
  */
 
-unsigned int ht_primes[] = {
-	31, /* 2^5 */
-	61,
-	127,
-	257,
-	509,
-	1021,
-	2053,
-	4093,
-	8191,
-	16381,
-	32771,
-	65537,
-	131071,
-	262147,
-	524287,
-	1048573,
-	2097143,
-	4194301,
-	8388617,
-	16777213,
-	33554467,
-	67108859,
-	134217757,
-	268435459,
-	536870909,
-	1073741827,
-	2147483647,
-	4294967291 /* 2^32 */
+const unsigned long ht_primes[] = {
+	31UL, /* 2^5 */
+	61UL,
+	127UL,
+	257UL,
+	509UL,
+	1021UL,
+	2053UL,
+	4093UL,
+	8191UL,
+	16381UL,
+	32771UL,
+	65537UL,
+	131071UL,
+	262147UL,
+	524287UL,
+	1048573UL,
+	2097143UL,
+	4194301UL,
+	8388617UL,
+	16777213UL,
+	33554467UL,
+	67108859UL,
+	134217757UL,
+	268435459UL,
+	536870909UL,
+	1073741827UL,
+	2147483647UL,
+	4294967291UL /* 2^32 */
 };
 
-int binary_search(unsigned int *array, int len, unsigned int value)
+unsigned long binary_search(const unsigned long *array, int len, unsigned long value)
 {
 	int lo = 0, hi = len, mid;
 	while (lo < hi) {
@@ -82,18 +82,19 @@ int binary_search(unsigned int *array, int len, unsigned int value)
  * @param current The current size of the hash table.
  * @returns The next size in the sequence for hash tables.
  */
-int ht_next_size(int current)
+unsigned long ht_next_size(unsigned long current)
 {
-	int curridx = binary_search(ht_primes, nelem(ht_primes), current);
+	unsigned long curridx = binary_search(
+			ht_primes, nelem(ht_primes), current);
 	return ht_primes[curridx + 1];
 }
 
-unsigned int item_size(const struct hashtable *obj)
+unsigned long item_size(const struct hashtable *obj)
 {
 	return HTA_KEY_OFFSET + obj->key_size + obj->value_size;
 }
 
-unsigned int convert_idx(const struct hashtable *obj, unsigned int orig)
+unsigned long convert_idx(const struct hashtable *obj, unsigned long orig)
 {
 	return orig * item_size(obj);
 }
@@ -105,8 +106,8 @@ unsigned int convert_idx(const struct hashtable *obj, unsigned int orig)
  */
 unsigned int ht_find_insert(const struct hashtable *obj, void *key)
 {
-	unsigned int index = obj->hash(key) % obj->allocated;
-	unsigned int bufidx = convert_idx(obj, index);
+	unsigned long index = obj->hash(key) % obj->allocated;
+	unsigned long bufidx = convert_idx(obj, index);
 	unsigned int j = 1;
 
 	/*
@@ -137,8 +138,8 @@ unsigned int ht_find_insert(const struct hashtable *obj, void *key)
  */
 unsigned int ht_find_retrieve(const struct hashtable *obj, void *key)
 {
-	unsigned int index = obj->hash(key) % obj->allocated;
-	unsigned int bufidx = convert_idx(obj, index);
+	unsigned long index = obj->hash(key) % obj->allocated;
+	unsigned long bufidx = convert_idx(obj, index);
 	unsigned int j = 1;
 
 	/*
@@ -170,7 +171,7 @@ unsigned int ht_find_retrieve(const struct hashtable *obj, void *key)
 void ht_resize(struct hashtable *table)
 {
 	void *old_table;
-	unsigned int index, old_allocated, bufidx;
+	unsigned long index, old_allocated, bufidx;
 
 	/* Step one: allocate new space for the table */
 	old_table = table->table;
@@ -249,7 +250,7 @@ void ht_delete(struct hashtable *table)
 
 void ht_insert(struct hashtable *table, void *key, void *value)
 {
-	unsigned int index, bufidx;
+	unsigned long index, bufidx;
 	if (ht_load_factor(table) > HASH_TABLE_MAX_LOAD_FACTOR) {
 		ht_resize(table);
 	}
@@ -286,8 +287,8 @@ void ht_insert_ptr(struct hashtable *table, void *key, void *value)
 
 int ht_remove(struct hashtable *table, void *key)
 {
-	unsigned int index = ht_find_retrieve(table, key);
-	unsigned int bufidx = convert_idx(table, index);
+	unsigned long index = ht_find_retrieve(table, key);
+	unsigned long bufidx = convert_idx(table, index);
 
 	/* If the returned slot isn't full, that means we couldn't find it. */
 	if (HTA_MARK(table, bufidx) != HT_FULL) {
@@ -307,8 +308,8 @@ int ht_remove_ptr(struct hashtable *table, void *key)
 
 void *ht_get(struct hashtable const *table, void *key)
 {
-	unsigned int index = ht_find_retrieve(table, key);
-	unsigned int bufidx = convert_idx(table, index);
+	unsigned long index = ht_find_retrieve(table, key);
+	unsigned long bufidx = convert_idx(table, index);
 
 	/* If the slot is not marked full, we didn't find the key. */
 	if (HTA_MARK(table, bufidx) != HT_FULL) {
@@ -366,14 +367,14 @@ int ht_int_comp(void *left, void *right)
 void ht_print(FILE* f, struct hashtable const *table, print_t key, print_t value,
               int full_mode)
 {
-	unsigned int i, bufidx;
+	unsigned long i, bufidx;
 	char *MARKS[] = {"EMPTY", " FULL", "GRAVE"};
 
 	for (i = 0; i < table->allocated; i++) {
 		bufidx = convert_idx(table, i);
 		int8_t mark = HTA_MARK(table, bufidx);
 		if (full_mode || mark == HT_FULL) {
-			printf("[%04d|%05d|%s]:\n", i, bufidx, MARKS[mark]);
+			printf("[%04lu|%05lu|%s]:\n", i, bufidx, MARKS[mark]);
 			if (mark == HT_FULL) {
 				printf("  key: ");
 				if (key) key(f, table->table + bufidx + HTA_KEY_OFFSET);
@@ -388,7 +389,7 @@ void ht_print(FILE* f, struct hashtable const *table, print_t key, print_t value
 static void *ht_next(struct iterator *iter)
 {
 	struct hashtable *table = iter->ds;
-	unsigned int bufidx;
+	unsigned long bufidx;
 	int8_t mark = HT_EMPTY;
 
 	for (; mark != HT_FULL && iter->state_int < (int)table->allocated; iter->state_int++) {

@@ -18,8 +18,8 @@ typedef int (*print_t)(FILE *f, void *data);
 
 struct hashtable
 {
-	unsigned int length;    /* number of items currently in the table */
-	unsigned int allocated; /* number of items allocated */
+	unsigned long length;    /* number of items currently in the table */
+	unsigned long allocated; /* number of items allocated */
 
 	unsigned int key_size;
 	unsigned int value_size;
