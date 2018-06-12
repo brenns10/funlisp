@@ -46,6 +46,7 @@ struct lisp_runtime {
 	 * memory as we do garbage collection
 	 */
 	struct ringbuf rb;
+	int has_marked;
 
 	/* Nil is used so much that we keep a global instance and don't bother
 	 * ever freeing it. */

@@ -26,6 +26,7 @@ void lisp_init(lisp_runtime *rt)
 
 void lisp_destroy(lisp_runtime *rt)
 {
+	rt->has_marked = 0; /* ensure we sweep all */
 	lisp_sweep(rt);
 	rb_destroy(&rt->rb);
 	lisp_free(rt->nil);
@@ -34,6 +35,7 @@ void lisp_destroy(lisp_runtime *rt)
 void lisp_mark(lisp_runtime *rt, lisp_value *v)
 {
 	rb_push_back(&rt->rb, &v);
+	rt->has_marked = 1;
 
 	while (rt->rb.count > 0) {
 		rb_pop_front(&rt->rb, &v);
@@ -50,9 +52,40 @@ void lisp_mark(lisp_runtime *rt, lisp_value *v)
 	}
 }
 
+/*
+ * The interpreter contains references to several important objects which we
+ * must mark to avoid freeing accidentally. We mark them here. See lisp_sweep()
+ * to understand when this is called.
+ */
+static void lisp_mark_basics(lisp_runtime *rt)
+{
+	if (rt->error_stack)
+		lisp_mark(rt, (lisp_value *) rt->error_stack);
+	lisp_mark(rt, (lisp_value *) rt->stack);
+}
+
 void lisp_sweep(lisp_runtime *rt)
 {
 	lisp_value *curr = rt->head;
+
+	/*
+	 * When a user has called lisp_mark() before calling lisp_sweep(), we
+	 * know that they intend to continue using the interpreter. Conversely,
+	 * when a user does not call lisp_mark(), and then calls lisp_sweep(),
+	 * we know they are clearing all the interpreter data, and we are safe
+	 * to clobber the internal interpreter data.
+	 *
+	 * So, mark some basic data when stuff has already been marked. But, if
+	 * nothing has been marked, then reset internal state and leave the
+	 * basic data unmarked.
+	 */
+	if (rt->has_marked) {
+		lisp_mark_basics(rt);
+	} else {
+		lisp_clear_error(rt);
+		rt->stack = (lisp_list*)rt->nil;
+		rt->stack_depth = 0;
+	}
 
 	while (curr->next) {
 		if (curr->next->mark != GC_MARKED) {
@@ -67,4 +100,5 @@ void lisp_sweep(lisp_runtime *rt)
 
 	curr->mark = GC_NOMARK;
 	rt->tail = curr;
+	rt->has_marked = false;
 }
