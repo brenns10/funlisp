@@ -104,8 +104,6 @@ static lisp_type *lisp_get_type(char c)
 		return type_string;
 	case 'o':
 		return type_scope;
-	case 'e':
-		return type_error;
 	case 'b':
 		return type_builtin;
 	case 't':
@@ -217,7 +215,8 @@ lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
 	lisp_value *main_func = lisp_scope_lookup(
 		rt, scope, lisp_symbol_new(rt, "main"));
 
-	if (main_func->type == type_error) {
+	if (main_func->type == NULL) {
+		lisp_clear_error(rt);
 		return lisp_nil_new(rt);
 	}
 
@@ -284,11 +283,6 @@ lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *sym)
 char *lisp_symbol_get(lisp_symbol *sym)
 {
 	return sym->sym;
-}
-
-char *lisp_error_get(lisp_error *err)
-{
-	return err->message;
 }
 
 lisp_list *lisp_list_new(lisp_runtime *rt, lisp_value *left, lisp_value *right)

@@ -117,14 +117,6 @@ typedef struct lisp_scope lisp_scope;
 typedef struct lisp_symbol lisp_symbol;
 
 /**
- * Error is a lisp type returned whenever (shockingly) an error occurs. This is
- * a bit of a hack to enable a base support for error handling. Errors may have
- * a string message.
- * @ingroup types
- */
-typedef struct lisp_error lisp_error;
-
-/**
  * ::lisp_integer contains an int object of whatever size the C implementation
  * supports.
  * @ingroup types
@@ -184,7 +176,8 @@ lisp_value *lisp_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *value);
 
 /**
  * Call a callable object with a list of arguments. Many data types are not
- * callable, in which case a ::lisp_error is returned.
+ * callable, in which case a NULL is returned and an error is set within the
+ * runtime.
  * @param rt runtime
  * @param scope scope in which we are being evaluated
  * @param callable value to call
@@ -259,11 +252,11 @@ void lisp_scope_bind(lisp_scope *scope, lisp_symbol *symbol, lisp_value *value);
 /**
  * Look up a symbol within a scope. If it is not found in this scope, look
  * within the parent scope etc, until it is found. If it is not found at all,
- * return a ::lisp_error object.
+ * return NULL and set an error within the interpreter.
  * @param rt runtime
  * @param scope scope to look in
  * @param symbol symbol to look up
- * @return value found, or a ::lisp_error when not found
+ * @return value found, or a NULL when not found
  */
 lisp_value *lisp_scope_lookup(lisp_runtime *rt, lisp_scope *scope,
                               lisp_symbol *symbol);
@@ -273,7 +266,7 @@ lisp_value *lisp_scope_lookup(lisp_runtime *rt, lisp_scope *scope,
  * @param rt runtime
  * @param scope scope to look in
  * @param name string name to look up
- * @return value found, or a ::lisp_error when not found
+ * @return value found, or NULL when not found
  */
 lisp_value *lisp_scope_lookup_string(lisp_runtime *rt, lisp_scope *scope, char *name);
 
@@ -392,12 +385,6 @@ int lisp_nil_p(lisp_value *l);
 extern lisp_type *type_symbol;
 
 /**
- * Type object of ::lisp_error, for type checking.
- * @sa lisp_is()
- */
-extern lisp_type *type_error;
-
-/**
  * Type object of ::lisp_integer, for type checking.
  * @sa lisp_is()
  */
@@ -487,13 +474,6 @@ char *lisp_symbol_get(lisp_symbol *s);
  * @return a new error
  */
 lisp_value  *lisp_error_new(lisp_runtime *rt, char *message);
-
-/**
- * Return the message from an error.
- * @param e the error to retrieve the message from
- * @return the message contained in the error
- */
-char *lisp_error_get(lisp_error *e);
 
 /**
  * Create a new integer.

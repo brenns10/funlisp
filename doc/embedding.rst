@@ -139,7 +139,6 @@ characters are:
 - ``s``: for symbol
 - ``S``: for string
 - ``o``: for scope
-- ``e``: for error
 - ``b``: for builtin
 - ``t``: for type
 - ``*``: for anything

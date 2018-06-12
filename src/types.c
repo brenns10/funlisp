@@ -40,15 +40,6 @@ static lisp_value *call_error(lisp_runtime *rt, lisp_scope *s, lisp_value *c,
 	return lisp_error_new(rt, "not callable!");
 }
 
-static lisp_value *call_same(lisp_runtime *rt, lisp_scope *s, lisp_value *c,
-                             lisp_value *v)
-{
-	(void)rt;
-	(void)s;
-	(void)v;
-	return c;
-}
-
 static bool has_next_index_lt_state(struct iterator *iter)
 {
 	return iter->index < iter->state_int;
@@ -331,47 +322,6 @@ static void symbol_free(void *v)
 }
 
 /*
- * error
- */
-
-static void error_print(FILE *f, lisp_value *v);
-static lisp_value *error_new(void);
-static void error_free(void *v);
-
-static lisp_type type_error_obj = {
-	.type=&type_type_obj,
-	.name="error",
-	.print=error_print,
-	.new=error_new,
-	.eval=eval_same,
-	.free=error_free,
-	.call=call_same,
-	.expand=iterator_empty,
-};
-lisp_type *type_error = &type_error_obj;
-
-static void error_print(FILE *f, lisp_value *v)
-{
-	lisp_error *error = (lisp_error*) v;
-	fprintf(f, "error: %s", error->message);
-}
-
-static lisp_value *error_new(void)
-{
-	lisp_error *error = malloc(sizeof(lisp_error));
-	error->type = type_error;
-	error->message = NULL;
-	return (lisp_value*)error;
-}
-
-static void error_free(void *v)
-{
-	lisp_error *error = (lisp_error*) v;
-	free(error->message);
-	free(error);
-}
-
-/*
  * integer
  */
 
@@ -599,12 +549,14 @@ lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope,
                       lisp_value *callable, lisp_value *args)
 {
 	lisp_value *rv;
-	if (callable->type == type_error) {
-		return callable;
-	}
+	/* create new stack frame */
 	rt->stack = lisp_list_new(rt, callable, (lisp_value *) rt->stack);
 	rt->stack_depth++;
+
+	/* make function call */
 	rv = callable->type->call(rt, scope, callable, args);
+
+	/* get rid of stack frame */
 	rt->stack = (lisp_list*) rt->stack->right;
 	rt->stack_depth--;
 	return rv;
