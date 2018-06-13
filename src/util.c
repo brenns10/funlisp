@@ -249,7 +249,7 @@ lisp_value *lisp_nil_new(lisp_runtime *rt)
 	return rt->nil;
 }
 
-static char *strdup(char *s)
+static char *my_strdup(char *s)
 {
 	int len = strlen(s);
 	char *new = malloc(len + 1);
@@ -269,7 +269,7 @@ lisp_string *lisp_string_new_unowned(lisp_runtime *rt, char *str)
 lisp_string *lisp_string_new(lisp_runtime *rt, char *str)
 {
 	lisp_string *string = (lisp_string *) lisp_new(rt, type_string);
-	string->s = strdup(str);
+	string->s = my_strdup(str);
 	return string;
 }
 
@@ -281,7 +281,7 @@ char *lisp_string_get(lisp_string *s)
 lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *sym)
 {
 	lisp_symbol *err = (lisp_symbol*)lisp_new(rt, type_symbol);
-	err->sym = strdup(sym);
+	err->sym = my_strdup(sym);
 	return err;
 }
 
