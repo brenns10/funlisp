@@ -46,17 +46,25 @@ instead do:
 
    lisp_print(stdout, object);
 
+Which, under the hood, simply gets the type object and uses the print function.
 But there's no magic or switch statements involved here--we're simply using the
 type object.
 
-This means that it's not too difficult to add a type to the language! All you
-need to do is declare a struct for your type, implement the basic functions, and
-create a type object for it. The type object must implement the following
-operations:
+All of the type object operations have their own helper functions like print.
+The advantage to doing this, besides less verbose code, is that shared
+operations can be done together. For example, the ``lisp_new()`` function does
+some garbage collection related operations that none of the type object
+``new()`` methods need to know about.
+
+As a result of these type objects, it's not too difficult to add a type to the
+language! All you need to do is declare a struct for your type, implement the
+basic functions, and create a type object for it. The type object must implement
+the following operations:
 
 - print: writes a representation of the object to a file, without newline
 - new: allocates and initializes a new instance of the object
 - free: cleans up and frees an instance
-- expand: creates an iterator of ALL references to objects this object owns
+- expand: creates an iterator of ALL references to objects this object owns (see
+  the garbage collection documentation)
 - eval: evaluate this in a scope
 - call: call this item in a scope with arguments
