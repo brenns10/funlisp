@@ -47,8 +47,11 @@ install: bin/libfunlisp.a
 	install -m 644 bin/libfunlisp.a $(DESTDIR)$(PREFIX)/lib/
 	install -d $(DESTDIR)$(PREFIX)/include/
 	install -m 644 inc/funlisp.h $(DESTDIR)$(PREFIX)/include/
-	install -d $(DESTDIR)$(PREFIX)/share/man/man3/
-	install -m 644 man/funlisp.3 $(DESTDIR)$(PREFIX)/share/man/man3/
+	@# Documentation installed only if it has been generated.
+	if [ -f man/funlisp.3 ]; then \
+	  install -d $(DESTDIR)$(PREFIX)/share/man/man3/ ; \
+	  install -m 644 man/funlisp.3 $(DESTDIR)$(PREFIX)/share/man/man3/ ; \
+	fi
 
 # For uninstallation of the library. Should be kept in sync with the above
 # installation files. Depends on the same variables.
@@ -56,7 +59,7 @@ uninstall: FORCE
 	@echo 'Sorry to see you go!'
 	rm $(DESTDIR)$(PREFIX)/lib/libfunlisp.a
 	rm $(DESTDIR)$(PREFIX)/include/funlisp.h
-	rm $(DESTDIR)$(PREFIX)/share/man/man3/funlisp.3
+	rm -f $(DESTDIR)$(PREFIX)/share/man/man3/funlisp.3
 
 FORCE:
 	@true
