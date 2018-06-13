@@ -29,6 +29,19 @@ this script using the ``bin/runfile`` utility bundled with funlisp:
   $ bin/runfile scripts/hello_world.lisp
   hello world
 
+Comments
+--------
+
+Line comments are created in funlisp by starting them with a semicolon (``;``).
+Everything after that, until the end of the line, is ignored by the parser. Here
+are some examples:
+
+.. code:: lisp
+
+  ; i'm a comment
+  (print "i'm some code" ; with a comment in the middle
+  )
+
 Types
 -----
 

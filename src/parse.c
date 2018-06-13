@@ -26,10 +26,12 @@ typedef struct {
 		return r;                     \
 	} while(0)
 
+#define COMMENT ';'
 
-result lisp_parse_value(lisp_runtime *rt, char *input, int index);
 
-result lisp_parse_integer(lisp_runtime *rt, char *input, int index)
+static result lisp_parse_value(lisp_runtime *rt, char *input, int index);
+
+static result lisp_parse_integer(lisp_runtime *rt, char *input, int index)
 {
 	int n;
 	lisp_integer *v = (lisp_integer*)lisp_new(rt, type_integer);
@@ -37,7 +39,23 @@ result lisp_parse_integer(lisp_runtime *rt, char *input, int index)
 	return_result(v, index + n);
 }
 
-char lisp_escape(char escape)
+static int skip_space_and_comments(char *input, int index)
+{
+	for (;;) {
+		while (isspace(input[index])) {
+			index++;
+		}
+		if (input[index] && input[index] == COMMENT) {
+			while (input[index] && input[index] != '\n') {
+				index++;
+			}
+		} else {
+			return index;
+		}
+	}
+}
+
+static char lisp_escape(char escape)
 {
 	switch (escape) {
 	case 'a':
@@ -59,7 +77,7 @@ char lisp_escape(char escape)
 	}
 }
 
-result lisp_parse_string(lisp_runtime *rt, char *input, int index)
+static result lisp_parse_string(lisp_runtime *rt, char *input, int index)
 {
 	int i;
 	struct charbuf cb;
@@ -82,12 +100,12 @@ result lisp_parse_string(lisp_runtime *rt, char *input, int index)
 	return_result(str, i);
 }
 
-result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
+static result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 {
 	result r;
 	lisp_list *rv, *l;
 
-	while (isspace(input[index])) {index++;}
+	index = skip_space_and_comments(input, index);
 	if (input[index] == ')') {
 		return_result(lisp_nil_new(rt), index + 1);
 	}
@@ -99,9 +117,7 @@ result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 	l = rv;
 
 	while (true) {
-		while (isspace(input[index])) {
-			index++;
-		}
+		index = skip_space_and_comments(input, index);
 
 		if (input[index] == '.') {
 			index++;
@@ -123,14 +139,14 @@ result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 	}
 }
 
-result lisp_parse_symbol(lisp_runtime *rt, char *input, int index)
+static result lisp_parse_symbol(lisp_runtime *rt, char *input, int index)
 {
 	int n = 0;
 	lisp_symbol *s;
 
 	while (input[index + n] && !isspace(input[index + n]) &&
 	       input[index + n] != ')' && input[index + n] != '.' &&
-	       input[index + n] != '\'') {
+	       input[index + n] != '\'' && input[index + n] != COMMENT) {
 		n++;
 	}
 	s = (lisp_symbol*)lisp_new(rt, type_symbol);
@@ -140,18 +156,16 @@ result lisp_parse_symbol(lisp_runtime *rt, char *input, int index)
 	return_result(s, index + n);
 }
 
-result lisp_parse_quote(lisp_runtime *rt, char *input, int index)
+static result lisp_parse_quote(lisp_runtime *rt, char *input, int index)
 {
 	result r = lisp_parse_value(rt, input, index + 1);
 	r.result = lisp_quote(rt, r.result);
 	return r;
 }
 
-result lisp_parse_value(lisp_runtime *rt, char *input, int index)
+static result lisp_parse_value(lisp_runtime *rt, char *input, int index)
 {
-	while (isspace(input[index])) {
-		index++;
-	}
+	index = skip_space_and_comments(input, index);
 
 	if (input[index] == '"') {
 		return lisp_parse_string(rt, input, index);

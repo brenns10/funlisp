@@ -10,6 +10,8 @@ changes may be made on minor versiosn bumps, and feature additions / bug-fixes
 will be made on patch versions.
 
 ## [Unreleased]
+### Added
+- line comments are now supported via the semicolon (`;`) character
 
 ## [0.1.0] (BETA) - 2018-06-13
 
