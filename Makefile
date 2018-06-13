@@ -82,7 +82,7 @@ clean_doc:
 # within a subdirectory.
 package: FORCE clean doc
 	tar --transform='s/^/funlisp-$(VERSION)\//' -cvf funlisp-$(VERSION).tar.gz \
-		LICENSE.txt README.md \
+		LICENSE.txt README.md INSTALL.md \
 		Makefile Makefile.conf Makefile.conf.dev Makefile.dep \
 		Doxyfile doc/*.rst doc/Makefile doc/conf.py doc/requirements.txt \
 		html man \

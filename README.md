@@ -20,13 +20,18 @@ scripts within [scripts/](scripts/). You can run them with the `runfile` tool:
 
 [Read the Docs!][documentation]
 
-Using
------
+Installation
+------------
 
 I still consider this project to be in a beta state. Some small breaking changes
 are still happening to the API, but they are getting smaller. I hope to cut a v1
-release soon, but in the meantime feel free to build a copy and use it in your
-library :)
+release soon, but in the meantime feel free to build a copy and use it locally
+in your project.
+
+You can also install system-wide from source - see [INSTALL.md](INSTALL.md).
+
+Distribution packages don't exist yet, but when they do, they will be listed
+here.
 
 Contributing
 ------------
