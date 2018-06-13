@@ -31,11 +31,11 @@ static lisp_value *say_hello(lisp_runtime *rt, lisp_scope *scope,
 
 int main(int argc, char **argv)
 {
-	(void)argc; /* unused parameters */
-	(void)argv;
-
 	lisp_runtime *rt = lisp_runtime_new();
 	lisp_scope *scope = lisp_new_default_scope(rt);
+
+	(void)argc; /* unused parameters */
+	(void)argv;
 
 	/* (2) Here we register the builtin once */
 	lisp_scope_add_builtin(rt, scope, "hello", say_hello, "a computer");
@@ -43,18 +43,21 @@ int main(int argc, char **argv)
 	lisp_scope_add_builtin(rt, scope, "hello_from_stephen", say_hello, "Stephen");
 
 	for (;;) {
-		char *input = readline("> ");
+		char *input;
+		lisp_value *value, *result;
+
+		input = readline("> ");
 		if (input == NULL)
 			break; /* Ctrl-D, EOF */
-		lisp_value *value = lisp_parse(rt, input);
+		value = lisp_parse(rt, input);
 		add_history(input);
 		free(input);
 		if (!value)
 			continue; /* blank line */
-		lisp_value *result = lisp_eval(rt, scope, value);
+		result = lisp_eval(rt, scope, value);
 		if (!result) {
 			lisp_print_error(rt, stderr);
-			lisp_error_clear(rt);
+			lisp_clear_error(rt);
 		} else if (!lisp_nil_p(result)) {
 			lisp_print(stdout, result);
 			fprintf(stdout, "\n");

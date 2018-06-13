@@ -12,22 +12,25 @@
 
 int main(int argc, char **argv)
 {
-	(void)argc; /* unused parameters */
-	(void)argv;
-
 	lisp_runtime *rt = lisp_runtime_new();
 	lisp_scope *scope = lisp_new_default_scope(rt);
 
+	(void)argc; /* unused parameters */
+	(void)argv;
+
 	for (;;) {
-		char *input = readline("> ");
+		char *input;
+		lisp_value *value, *result;
+
+		input = readline("> ");
 		if (input == NULL)
 			break; /* Ctrl-D, EOF */
-		lisp_value *value = lisp_parse(rt, input);
+		value = lisp_parse(rt, input);
 		add_history(input);
 		free(input);
 		if (!value)
 			continue; /* blank line */
-		lisp_value *result = lisp_eval(rt, scope, value);
+		result = lisp_eval(rt, scope, value);
 		if (!result) {
 			lisp_print_error(rt, stderr);
 			lisp_clear_error(rt);

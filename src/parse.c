@@ -18,6 +18,15 @@ typedef struct {
 	int index;
 } result;
 
+#define return_result(v, i)                   \
+	do {                                  \
+		result r;                     \
+		r.result = (lisp_value*) (v); \
+		r.index = (i);                \
+		return r;                     \
+	} while(0)
+
+
 result lisp_parse_value(lisp_runtime *rt, char *input, int index);
 
 result lisp_parse_integer(lisp_runtime *rt, char *input, int index)
@@ -25,7 +34,7 @@ result lisp_parse_integer(lisp_runtime *rt, char *input, int index)
 	int n;
 	lisp_integer *v = (lisp_integer*)lisp_new(rt, type_integer);
 	sscanf(input + index, "%d%n", &v->x, &n);
-	return (result){(lisp_value*)v, index + n};
+	return_result(v, index + n);
 }
 
 char lisp_escape(char escape)
@@ -52,8 +61,11 @@ char lisp_escape(char escape)
 
 result lisp_parse_string(lisp_runtime *rt, char *input, int index)
 {
-	int i = index + 1;
+	int i;
 	struct charbuf cb;
+	lisp_string *str;
+
+	i = index + 1;
 	cb_init(&cb, 16);
 	while (input[i] && input[i] != '"') {
 		if (input[i] == '\\') {
@@ -64,23 +76,27 @@ result lisp_parse_string(lisp_runtime *rt, char *input, int index)
 		i++;
 	}
 	cb_trim(&cb);
-	lisp_string *str = (lisp_string*)lisp_new(rt, type_string);
+	str = (lisp_string*)lisp_new(rt, type_string);
 	str->s = cb.buf;
-	return (result){(lisp_value*)str, ++i};
+	i++;
+	return_result(str, i);
 }
 
 result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 {
+	result r;
+	lisp_list *rv, *l;
+
 	while (isspace(input[index])) {index++;}
 	if (input[index] == ')') {
-		return (result){(lisp_value*)lisp_nil_new(rt), index + 1};
+		return_result(lisp_nil_new(rt), index + 1);
 	}
 
-	result r = lisp_parse_value(rt, input, index);
+	r = lisp_parse_value(rt, input, index);
 	index = r.index;
-	lisp_list *rv = (lisp_list*)lisp_new(rt, type_list);
+	rv = (lisp_list*)lisp_new(rt, type_list);
 	rv->left = r.result;
-	lisp_list *l = rv;
+	l = rv;
 
 	while (true) {
 		while (isspace(input[index])) {
@@ -89,14 +105,14 @@ result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 
 		if (input[index] == '.') {
 			index++;
-			result r = lisp_parse_value(rt, input, index);
+			r = lisp_parse_value(rt, input, index);
 			index = r.index;
 			l->right = r.result;
-			return (result){(lisp_value*)rv, index};
+			return_result(rv, index);
 		} else if (input[index] == ')') {
 			index++;
 			l->right = lisp_nil_new(rt);
-			return (result){(lisp_value*)rv, index};
+			return_result(rv, index);
 		} else {
 			result r = lisp_parse_value(rt, input, index);
 			l->right = lisp_new(rt, type_list);
@@ -110,16 +126,18 @@ result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 result lisp_parse_symbol(lisp_runtime *rt, char *input, int index)
 {
 	int n = 0;
+	lisp_symbol *s;
+
 	while (input[index + n] && !isspace(input[index + n]) &&
 	       input[index + n] != ')' && input[index + n] != '.' &&
 	       input[index + n] != '\'') {
 		n++;
 	}
-	lisp_symbol *s = (lisp_symbol*)lisp_new(rt, type_symbol);
+	s = (lisp_symbol*)lisp_new(rt, type_symbol);
 	s->sym = malloc(n + 1);
 	strncpy(s->sym, input + index, n);
 	s->sym[n] = '\0';
-	return (result){(lisp_value*)s, index + n};
+	return_result(s, index + n);
 }
 
 result lisp_parse_quote(lisp_runtime *rt, char *input, int index)
@@ -139,10 +157,10 @@ result lisp_parse_value(lisp_runtime *rt, char *input, int index)
 		return lisp_parse_string(rt, input, index);
 	}
 	if (input[index] == '\0') {
-		return (result){NULL, index};
+		return_result(NULL, index);
 	}
 	if (input[index] == ')') {
-		return (result){lisp_nil_new(rt), index + 1};
+		return_result(lisp_nil_new(rt), index + 1);
 	}
 	if (input[index] == '(') {
 		return lisp_parse_list_or_sexp(rt, input, index + 1);

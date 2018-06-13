@@ -56,10 +56,11 @@ void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
 lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *l)
 {
 	lisp_value *left, *right;
+	lisp_list *list;
 	if (lisp_nil_p(l)) {
 		return l;
 	}
-	lisp_list *list = (lisp_list*) l;
+	list = (lisp_list*) l;
 
 	left = lisp_eval(rt, scope, list->left);
 	lisp_error_check(left);
@@ -81,10 +82,13 @@ int lisp_list_length(lisp_list *list)
 }
 
 lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value) {
-	lisp_list *l = (lisp_list*)lisp_new(rt, type_list);
-	lisp_symbol *q = lisp_symbol_new(rt, "quote");
+	lisp_list *s, *l;
+	lisp_symbol *q;
+
+	l = (lisp_list*)lisp_new(rt, type_list);
+	q = lisp_symbol_new(rt, "quote");
 	l->left = (lisp_value*)q;
-	lisp_list *s = (lisp_list*) lisp_new(rt, type_list);
+	s = (lisp_list*) lisp_new(rt, type_list);
 	s->right = lisp_nil_new(rt);
 	l->right = (lisp_value*)s;
 	s->left = value;
@@ -114,9 +118,10 @@ static lisp_type *lisp_get_type(char c)
 
 int lisp_get_args(lisp_list *list, char *format, ...)
 {
-	va_list va;
-	va_start(va, format);
 	lisp_value **v;
+	va_list va;
+
+	va_start(va, format);
 	while (!lisp_nil_p((lisp_value*)list) && *format != '\0') {
 		lisp_type *type = lisp_get_type(*format);
 		if (type != NULL && type != list->left->type) {

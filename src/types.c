@@ -13,6 +13,11 @@
 #include "iter.h"
 #include "hashtable.h"
 
+#define TYPE_HEADER \
+	&type_type_obj, \
+	NULL, \
+	'w'
+
 /*
  * Some generic functions for types
  */
@@ -53,14 +58,14 @@ static void type_print(FILE *f, lisp_value *v);
 static lisp_value *type_new(void);
 
 static lisp_type type_type_obj = {
-	.type=&type_type_obj,
-	.name="type",
-	.print=type_print,
-	.new=type_new,
-	.eval=eval_error,
-	.free=free,
-	.call=call_error,
-	.expand=iterator_empty,
+	TYPE_HEADER,
+	/* name */ "type",
+	/* print */ type_print,
+	/* new */ type_new,
+	/* free */ free,
+	/* expand */ iterator_empty,
+	/* eval */ eval_error,
+	/* call */ call_error,
 };
 lisp_type *type_type = &type_type_obj;
 
@@ -86,14 +91,14 @@ static void scope_free(void *v);
 static struct iterator scope_expand(lisp_value *);
 
 static lisp_type type_scope_obj = {
-	.type=&type_type_obj,
-	.name="scope",
-	.print=scope_print,
-	.new=scope_new,
-	.eval=eval_error,
-	.free=scope_free,
-	.call=call_error,
-	.expand=scope_expand,
+	TYPE_HEADER,
+	/* name */ "scope",
+	/* print */ scope_print,
+	/* new */ scope_new,
+	/* free */ scope_free,
+	/* expand */ scope_expand,
+	/* eval */ eval_error,
+	/* call */ call_error,
 };
 lisp_type *type_scope = &type_scope_obj;
 
@@ -168,19 +173,20 @@ static lisp_value *list_eval(lisp_runtime*, lisp_scope*, lisp_value*);
 static struct iterator list_expand(lisp_value*);
 
 static lisp_type type_list_obj = {
-	.type=&type_type_obj,
-	.name="list",
-	.print=list_print,
-	.new=list_new,
-	.eval=list_eval,
-	.free=free,
-	.call=call_error,
-	.expand=list_expand,
+	TYPE_HEADER,
+	/* name */ "list",
+	/* print */ list_print,
+	/* new */ list_new,
+	/* free */ free,
+	/* expand */ list_expand,
+	/* eval */ list_eval,
+	/* call */ call_error,
 };
 lisp_type *type_list = &type_list_obj;
 
 static lisp_value *list_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *v)
 {
+	lisp_value *callable;
 	lisp_list *list = (lisp_list*) v;
 
 	if (lisp_nil_p(v)) {
@@ -190,7 +196,7 @@ static lisp_value *list_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *v)
 	if (list->right->type != type_list) {
 		return lisp_error_new(rt, "You may not call with an s-expression");
 	}
-	lisp_value *callable = lisp_eval(rt, scope, list->left);
+	callable = lisp_eval(rt, scope, list->left);
 	lisp_error_check(callable);
 	return lisp_call(rt, scope, callable, list->right);
 }
@@ -259,14 +265,13 @@ static bool list_has_next(struct iterator *it)
 
 static struct iterator list_expand(lisp_value *v)
 {
-	struct iterator it = {
-		.ds=v,
-		.state_int=2,
-		.index=0,
-		.next=list_expand_next,
-		.has_next=list_has_next,
-		.close=iterator_close_noop,
-	};
+	struct iterator it = {0};
+	it.ds = v;
+	it.state_int = 2;
+	it.index = 0;
+	it.next = list_expand_next;
+	it.has_next = list_has_next;
+	it.close = iterator_close_noop;
 	return it;
 }
 
@@ -280,14 +285,14 @@ static lisp_value *symbol_eval(lisp_runtime*, lisp_scope*, lisp_value*);
 static void symbol_free(void *v);
 
 static lisp_type type_symbol_obj = {
-	.type=&type_type_obj,
-	.name="symbol",
-	.print=symbol_print,
-	.new=symbol_new,
-	.eval=symbol_eval,
-	.free=symbol_free,
-	.call=call_error,
-	.expand=iterator_empty,
+	TYPE_HEADER,
+	/* name */ "symbol",
+	/* print */ symbol_print,
+	/* new */ symbol_new,
+	/* free */ symbol_free,
+	/* expand */ iterator_empty,
+	/* eval */ symbol_eval,
+	/* call */ call_error,
 };
 lisp_type *type_symbol = &type_symbol_obj;
 
@@ -308,8 +313,10 @@ static lisp_value *symbol_new(void)
 static lisp_value *symbol_eval(lisp_runtime *rt, lisp_scope *scope,
                                lisp_value *value)
 {
+	lisp_symbol *symbol;
 	(void)rt;
-	lisp_symbol *symbol = (lisp_symbol*) value;
+
+	symbol = (lisp_symbol*) value;
 	return lisp_scope_lookup(rt, scope, symbol);
 }
 
@@ -329,14 +336,14 @@ static void integer_print(FILE *f, lisp_value *v);
 static lisp_value *integer_new(void);
 
 static lisp_type type_integer_obj = {
-	.type=&type_type_obj,
-	.name="integer",
-	.print=integer_print,
-	.new=integer_new,
-	.eval=eval_same,
-	.free=free,
-	.call=call_error,
-	.expand=iterator_empty,
+	TYPE_HEADER,
+	/* name */ "integer",
+	/* print */ integer_print,
+	/* new */ integer_new,
+	/* free */ free,
+	/* expand */ iterator_empty,
+	/* eval */ eval_same,
+	/* call */ call_error,
 };
 lisp_type *type_integer = &type_integer_obj;
 
@@ -360,14 +367,14 @@ static lisp_value *string_new(void);
 static void string_free(void *v);
 
 static lisp_type type_string_obj = {
-	.type=&type_type_obj,
-	.name="string",
-	.print=string_print,
-	.new=string_new,
-	.eval=eval_same,
-	.free=string_free,
-	.call=call_error,
-	.expand=iterator_empty,
+	TYPE_HEADER,
+	/* name */ "string",
+	/* print */ string_print,
+	/* new */ string_new,
+	/* free */ string_free,
+	/* expand */ iterator_empty,
+	/* eval */ eval_same,
+	/* call */ call_error,
 };
 lisp_type *type_string = &type_string_obj;
 
@@ -403,14 +410,14 @@ static lisp_value *builtin_call(lisp_runtime *rt, lisp_scope *scope,
                                 lisp_value *c, lisp_value *arguments);
 
 static lisp_type type_builtin_obj = {
-	.type=&type_type_obj,
-	.name="builtin",
-	.print=builtin_print,
-	.new=builtin_new,
-	.eval=eval_error,
-	.free=free,
-	.call=builtin_call,
-	.expand=iterator_empty,
+	TYPE_HEADER,
+	/* name */ "builtin",
+	/* print */ builtin_print,
+	/* new */ builtin_new,
+	/* free */ free,
+	/* expand */ iterator_empty,
+	/* eval */ eval_error,
+	/* call */ builtin_call,
 };
 lisp_type *type_builtin = &type_builtin_obj;
 
@@ -446,14 +453,14 @@ static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
 static struct iterator lambda_expand(lisp_value *v);
 
 static lisp_type type_lambda_obj = {
-	.type=&type_type_obj,
-	.name="lambda",
-	.print=lambda_print,
-	.new=lambda_new,
-	.eval=eval_error,
-	.free=free,
-	.call=lambda_call,
-	.expand=lambda_expand,
+	TYPE_HEADER,
+	/* name */ "lambda",
+	/* print */ lambda_print,
+	/* new */ lambda_new,
+	/* free */ free,
+	/* expand */ lambda_expand,
+	/* eval */ eval_error,
+	/* call */ lambda_call,
 };
 lisp_type *type_lambda = &type_lambda_obj;
 
@@ -474,13 +481,18 @@ static lisp_value *lambda_new()
 static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
                                lisp_value *c, lisp_value *arguments)
 {
-	lisp_lambda *lambda = (lisp_lambda*) c;
-	lisp_list *argvalues = (lisp_list*)lisp_eval_list(rt, scope, arguments);
+	lisp_lambda *lambda;
+	lisp_list *argvalues, *it1, *it2;
+	lisp_scope *inner;
+
+	lambda = (lisp_lambda*) c;
+	argvalues = (lisp_list*)lisp_eval_list(rt, scope, arguments);
 	lisp_error_check(argvalues);
-	lisp_scope *inner = (lisp_scope*)lisp_new(rt, type_scope);
+	inner = (lisp_scope*)lisp_new(rt, type_scope);
 	inner->up = lambda->closure;
 
-	lisp_list *it1 = lambda->args, *it2 = argvalues;
+	it1 = lambda->args;
+	it2 = argvalues;
 	while (!lisp_nil_p((lisp_value*)it1) && !lisp_nil_p((lisp_value*)it2)) {
 		lisp_scope_bind(inner, (lisp_symbol*) it1->left, it2->left);
 		it1 = (lisp_list*) it1->right;
@@ -515,14 +527,13 @@ static void *lambda_expand_next(struct iterator *it)
 
 static struct iterator lambda_expand(lisp_value *v)
 {
-	struct iterator it = {
-		.ds=v,
-		.state_int=3,
-		.index=0,
-		.next=lambda_expand_next,
-		.has_next=has_next_index_lt_state,
-		.close=iterator_close_noop,
-	};
+	struct iterator it = {0};
+	it.ds = v;
+	it.state_int = 3;
+	it.index = 0;
+	it.next = lambda_expand_next;
+	it.has_next = has_next_index_lt_state;
+	it.close = iterator_close_noop;
 	return it;
 }
 
