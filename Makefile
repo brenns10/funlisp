@@ -2,54 +2,55 @@
 #
 # Stephen Brennan <stephen@brennan.io>
 
-.PHONY: all clean doc
+# Setting for CFLAGS, CC, and DESTDIR come from Makefile.conf
+include Makefile.conf
 
-CC=gcc
-CFLAGS= -std=c89 -Wall -Wextra -pedantic -fPIC -Iinc -c
-SRCS=$(wildcard src/*.c)
-OBJS=$(patsubst src/%.c,obj/%.o,$(SRCS))
+OBJS=src/builtins.o src/charbuf.o src/gc.o src/hashtable.o src/iter.o \
+     src/parse.o src/ringbuf.o src/types.o src/util.o
 
-# Debug mode (make D=1): adds "debugging symbols" etc
-D=0
-ifeq ($(D),1)
-CFLAGS += -g -DDEBUG
-endif
+all: bin/libfunlisp.a FORCE
 
-all: bin/libfunlisp.a
-
-obj/%.o: src/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-obj/%.o: tools/%.c
+.c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
 
 bin/libfunlisp.a: $(OBJS)
 	ar rcs $@ $^
 
-bin/repl: obj/repl.o bin/libfunlisp.a
+bin/repl: tools/repl.o bin/libfunlisp.a
 	$(CC) -ledit $^ -o $@
 
-bin/hello_repl: obj/hello_repl.o bin/libfunlisp.a
+bin/hello_repl: tools/hello_repl.o bin/libfunlisp.a
 	$(CC) -ledit $^ -o $@
 
-bin/runfile:  obj/runfile.o bin/libfunlisp.a
+bin/runfile:  tools/runfile.o bin/libfunlisp.a
 	$(CC) $^ -o $@
 
-bin/call_lisp: obj/call_lisp.o bin/libfunlisp.a
+bin/call_lisp: tools/call_lisp.o bin/libfunlisp.a
 	$(CC) $^ -o $@
 
-clean:
-	rm -rf obj/* bin/* doc/xml
-	make -C doc clean
+clean: FORCE
+	rm -rf bin/* src/*.o tools/*.o
 
-doc:
+FORCE:
+	@true
+
+#
+# Below are tools mainly meant to be run by developers, using a broader array of
+# GNU utilities. They may not be strictly standard.
+#
+doc: FORCE
 	doxygen
-	make -C doc html
+	make -C doc html man
+
+clean_doc:
+	rm -rf doc/xml
+	make -C doc clean
 
 serve_doc: doc
 	cd doc/_build/html; python -m http.server --bind 0.0.0.0 8080
 
-depend: $(SRCS) src/*.h inc/*.h tools/*.c
-	$(CC) $(CFLAGS) -MM $(SRCS) | sed 's!^\(.*\):!obj/\1:!' > depend
+# Named differently from Makefile.dep to avoid implicit rules for inclusion.
+depend: FORCE
+	gcc $(CFLAGS) -MM src/*.c > Makefile.dep
 
-include depend
+include Makefile.dep
