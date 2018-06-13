@@ -28,13 +28,12 @@ static void *sv_next(struct iterator *iter)
 
 struct iterator iterator_single_value(void *value)
 {
-	struct iterator it = {
-		.ds=value,
-		.index=0,
-		.has_next=sv_has_next,
-		.next=sv_next,
-		.close=iterator_close_noop,
-	};
+	struct iterator it = {0};
+	it.ds = value;
+	it.index = 0;
+	it.has_next = sv_has_next;
+	it.next = sv_next;
+	it.close = iterator_close_noop;
 	return it;
 }
 
@@ -74,16 +73,15 @@ static void cc_close(struct iterator *iter)
 
 struct iterator iterator_concat(struct iterator *its, size_t n)
 {
-	struct iterator it = {
-		.ds = its,
-		.index = 0,
-		.state_int = 0,
-		.state_ptr = (void*) n,
+	struct iterator it = {0};
+	it.ds = its;
+	it.index = 0;
+	it.state_int = 0;
+	it.state_ptr = (void*) n;
 
-		.has_next = cc_has_next,
-		.next = cc_next,
-		.close = cc_close,
-	};
+	it.has_next = cc_has_next;
+	it.next = cc_next;
+	it.close = cc_close;
 	return it;
 }
 
@@ -119,11 +117,10 @@ static bool empty_has_next(struct iterator *iter)
 
 struct iterator iterator_empty()
 {
-	struct iterator it = {
-		.index=0,
-		.next=empty_next,
-		.has_next=empty_has_next,
-		.close=iterator_close_noop,
-	};
+	struct iterator it = {0};
+	it.index=0;
+	it.next=empty_next;
+	it.has_next=empty_has_next;
+	it.close=iterator_close_noop;
 	return it;
 }
