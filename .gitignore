@@ -8,7 +8,10 @@ GTAGS
 GRTAGS
 GPATH
 tags
-doc/_build
 doc/xml
+doc/.doctrees
+html
+man
+funlisp-*.tar.gz
 syntax: regexp
 (.*/)?\#[^/]*\#$
