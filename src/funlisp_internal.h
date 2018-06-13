@@ -19,6 +19,9 @@
 #define GC_QUEUED 'g'
 #define GC_MARKED 'b'
 
+/*
+ * WARNING - if you change this, you must update "TYPE_HEADER" in types.c.
+ */
 #define LISP_VALUE_HEAD                 \
 	struct lisp_type  *type;        \
 	struct lisp_value *next;        \
@@ -80,6 +83,10 @@ struct lisp_list {
 	lisp_value *right;
 };
 
+/*
+ * WARNING - any changes to this structure requires updating the initializers in
+ * src/types.c.
+ */
 struct lisp_type {
 	LISP_VALUE_HEAD;
 	const char *name;
