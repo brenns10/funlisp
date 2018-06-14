@@ -616,7 +616,11 @@ int lisp_get_args(lisp_list *list, char *format, ...);
 
 /**
  * Parse a *single* expression from a string, returning it as a ::lisp_value. If
- * there is no expression, return NULL
+ * there is no expression, or if there is an error, return NULL. To tell the
+ * difference between these conditions, use lisp_get_error() to see if there is
+ * currently an error. If so, there was no expression (just whitespace and/or
+ * comments). If there is currently an error, you may handle it or format it to
+ * the user.
  * @param rt runtime to create language objects in
  * @param input string
  * @return parsed expression

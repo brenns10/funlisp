@@ -28,8 +28,13 @@ int main(int argc, char **argv)
 		value = lisp_parse(rt, input);
 		add_history(input);
 		free(input);
-		if (!value)
-			continue; /* blank line */
+		if (lisp_get_error(rt)) {
+			lisp_print_error(rt, stderr);
+			lisp_clear_error(rt);
+			continue;
+		} else if (!value) {
+			continue;
+		}
 		result = lisp_eval(rt, scope, value);
 		if (!result) {
 			lisp_print_error(rt, stderr);

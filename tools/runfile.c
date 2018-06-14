@@ -33,6 +33,12 @@ int main(int argc, char **argv)
 	scope = lisp_new_default_scope(rt);
 
 	lisp_load_file(rt, scope, input);
+	if (lisp_get_error(rt)) {
+		lisp_print_error(rt, stderr);
+		rv = 1;
+		fclose(input);
+		goto out;
+	}
 	fclose(input);
 
 	result = lisp_run_main_if_exists(rt, scope, argc - 2, argv + 2);
@@ -42,6 +48,7 @@ int main(int argc, char **argv)
 	} else {
 		rv = 0;
 	}
+out:
 	lisp_runtime_free(rt); /* sweeps everything before exit */
 	return rv;
 }

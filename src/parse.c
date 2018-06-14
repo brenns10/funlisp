@@ -16,15 +16,19 @@
 typedef struct {
 	lisp_value *result;
 	int index;
+	int error;
 } result;
 
-#define return_result(v, i)                   \
-	do {                                  \
-		result r;                     \
-		r.result = (lisp_value*) (v); \
-		r.index = (i);                \
-		return r;                     \
+#define return_result_err(v, i, e)                        \
+	do {                                              \
+		result uncommon_name;                     \
+		uncommon_name.result = (lisp_value*) (v); \
+		uncommon_name.index = (i);                \
+		uncommon_name.error = (e);                \
+		return uncommon_name;                     \
 	} while(0)
+
+#define return_result(v, i) return_result_err(v, i, 0)
 
 #define COMMENT ';'
 
@@ -33,10 +37,15 @@ static result lisp_parse_value(lisp_runtime *rt, char *input, int index);
 
 static result lisp_parse_integer(lisp_runtime *rt, char *input, int index)
 {
-	int n;
+	int n, rv;
 	lisp_integer *v = (lisp_integer*)lisp_new(rt, type_integer);
-	sscanf(input + index, "%d%n", &v->x, &n);
-	return_result(v, index + n);
+	rv = sscanf(input + index, "%d%n", &v->x, &n);
+	if (rv != 1) {
+		rt->error = "syntax error: error parsing integer";
+		return_result_err(NULL, index, 1);
+	} else {
+		return_result(v, index + n);
+	}
 }
 
 static int skip_space_and_comments(char *input, int index)
@@ -93,6 +102,11 @@ static result lisp_parse_string(lisp_runtime *rt, char *input, int index)
 		}
 		i++;
 	}
+	if (!input[i]) {
+		cb_destroy(&cb);
+		rt->error = "unexpected eof while parsing string";
+		return_result_err(NULL, i, 1);
+	}
 	cb_trim(&cb);
 	str = (lisp_string*)lisp_new(rt, type_string);
 	str->s = cb.buf;
@@ -106,11 +120,16 @@ static result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 	lisp_list *rv, *l;
 
 	index = skip_space_and_comments(input, index);
-	if (input[index] == ')') {
+	if (!input[index]) {
+		rt->error = "unexpected eof while parsing list";
+		return_result_err(NULL, index, 1);
+	} else if (input[index] == ')') {
 		return_result(lisp_nil_new(rt), index + 1);
 	}
 
 	r = lisp_parse_value(rt, input, index);
+	if (r.error) return r;
+	else if (!r.result) return_result_err(NULL, r.index, 1);
 	index = r.index;
 	rv = (lisp_list*)lisp_new(rt, type_list);
 	rv->left = r.result;
@@ -119,9 +138,14 @@ static result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 	while (true) {
 		index = skip_space_and_comments(input, index);
 
-		if (input[index] == '.') {
+		if (!input[index]) {
+			rt->error = "unexpected eof while parsing list";
+			return_result_err(NULL, index, 1);
+		} else if (input[index] == '.') {
 			index++;
 			r = lisp_parse_value(rt, input, index);
+			if (r.error) return r;
+			else if (!r.result) return_result_err(NULL, r.index, 1);
 			index = r.index;
 			l->right = r.result;
 			return_result(rv, index);
@@ -130,7 +154,9 @@ static result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 			l->right = lisp_nil_new(rt);
 			return_result(rv, index);
 		} else {
-			result r = lisp_parse_value(rt, input, index);
+			r = lisp_parse_value(rt, input, index);
+			if (r.error) return r;
+			else if (!r.result) return_result_err(NULL, r.index, 1);
 			l->right = lisp_new(rt, type_list);
 			l = (lisp_list*)l->right;
 			l->left = r.result;
@@ -149,6 +175,10 @@ static result lisp_parse_symbol(lisp_runtime *rt, char *input, int index)
 	       input[index + n] != '\'' && input[index + n] != COMMENT) {
 		n++;
 	}
+	if (!input[index]) {
+		rt->error = "unexpected eof while parsing symbol";
+		return_result_err(NULL, index, 1);
+	}
 	s = (lisp_symbol*)lisp_new(rt, type_symbol);
 	s->sym = malloc(n + 1);
 	strncpy(s->sym, input + index, n);
@@ -159,6 +189,8 @@ static result lisp_parse_symbol(lisp_runtime *rt, char *input, int index)
 static result lisp_parse_quote(lisp_runtime *rt, char *input, int index)
 {
 	result r = lisp_parse_value(rt, input, index + 1);
+	if (r.error) return r;
+	else if (!r.result) return_result_err(NULL, r.index, 1);
 	r.result = lisp_quote(rt, r.result);
 	return r;
 }
@@ -188,9 +220,22 @@ static result lisp_parse_value(lisp_runtime *rt, char *input, int index)
 	return lisp_parse_symbol(rt, input, index);
 }
 
+static void set_error_lineno(lisp_runtime *rt, char *input, int index)
+{
+	int i;
+	rt->error_line = 1;
+	for (i = 0; i < index; i++)
+		if (input[i] == '\n')
+			rt->error_line++;
+}
+
 lisp_value *lisp_parse(lisp_runtime *rt, char *input)
 {
-	return lisp_parse_value(rt, input, 0).result;
+	result r = lisp_parse_value(rt, input, 0);
+	if (r.error) {
+		set_error_lineno(rt, input, r.index);
+	}
+	return r.result;
 }
 
 static char *read_file(FILE *input)
@@ -224,12 +269,17 @@ lisp_value *lisp_load_file(lisp_runtime *rt, lisp_scope *scope, FILE *input)
 	r.index = 0;
 	r.result = NULL;
 
-	if (!contents)
+	if (!contents) {
+		rt->error = "error reading file or allocating memory";
 		return NULL;
+	}
 
 	for (;;) {
 		r = lisp_parse_value(rt, contents, r.index);
-		if (!r.result) {
+		if (r.error) {
+			free(contents);
+			return NULL;
+		} else if (!r.result) {
 			lisp_mark(rt, (lisp_value *) scope);
 			if (last_val)
 				lisp_mark(rt, last_val);

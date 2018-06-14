@@ -52,7 +52,10 @@ int main(int argc, char **argv)
 		value = lisp_parse(rt, input);
 		add_history(input);
 		free(input);
-		if (!value)
+		if (lisp_get_error(rt)) {
+			lisp_print_error(rt, stderr);
+			lisp_clear_error(rt);
+		} else if (!value)
 			continue; /* blank line */
 		result = lisp_eval(rt, scope, value);
 		if (!result) {
