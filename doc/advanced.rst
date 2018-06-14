@@ -8,3 +8,5 @@ your own types, or contribute to funlisp.
    :maxdepth: 1
 
    advanced-types.rst
+   advanced-iterator.rst
+   advanced-gc.rst

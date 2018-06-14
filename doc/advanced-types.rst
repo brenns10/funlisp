@@ -64,7 +64,8 @@ the following operations:
 - print: writes a representation of the object to a file, without newline
 - new: allocates and initializes a new instance of the object
 - free: cleans up and frees an instance
-- expand: creates an iterator of ALL references to objects this object owns (see
-  the garbage collection documentation)
+- expand: creates an :doc:`iterator<advanced-iterator>` of ALL references to
+  objects this object owns (see the
+  :doc:`garbage collection documentation<advanced-gc>`)
 - eval: evaluate this in a scope
 - call: call this item in a scope with arguments
