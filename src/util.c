@@ -71,6 +71,24 @@ lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *l)
 	return (lisp_value *) lisp_list_new(rt, left, right);
 }
 
+lisp_value *lisp_progn(lisp_runtime *rt, lisp_scope *scope, lisp_list *l)
+{
+	lisp_value *v;
+
+	if (lisp_nil_p((lisp_value*)l))
+		return lisp_error_new(rt, "progn: need at least one arg");
+
+	while (1) {
+		v = lisp_eval(rt, scope, l->left);
+		lisp_error_check(v);
+
+		if (lisp_nil_p(l->right))
+			return v;
+		else
+			l = (lisp_list *) l->right;
+	}
+}
+
 int lisp_list_length(lisp_list *list)
 {
 	int length = 0;

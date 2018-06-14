@@ -525,6 +525,13 @@ static lisp_value *lisp_builtin_dump_stack(lisp_runtime *rt, lisp_scope *scope,
 	return lisp_nil_new(rt);
 }
 
+static lisp_value *lisp_builtin_progn(lisp_runtime *rt, lisp_scope *scope,
+                                      lisp_value *a, void *user)
+{
+	(void) user; /* unused */
+	return lisp_progn(rt, scope, (lisp_list *) a);
+}
+
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
 	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval, NULL);
@@ -550,4 +557,5 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "reduce", lisp_builtin_reduce, NULL);
 	lisp_scope_add_builtin(rt, scope, "print", lisp_builtin_print, NULL);
 	lisp_scope_add_builtin(rt, scope, "dump-stack", lisp_builtin_dump_stack, NULL);
+	lisp_scope_add_builtin(rt, scope, "progn", lisp_builtin_progn, NULL);
 }

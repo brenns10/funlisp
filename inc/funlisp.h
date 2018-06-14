@@ -557,6 +557,18 @@ void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
 lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *list);
 
 /**
+ * Given a list of ::lisp_value's, evaluate each of them within a scope,
+ * returning the last value. This is similar to lisp_eval_list(), but rather
+ * than constructing a full list of results, it merely returns the last one. It
+ * is used in the ``progn`` builtin, but it also is useful for doing things like
+ * evaluating everything in a file or allowing implimenting "implicit progns".
+ * @param rt runtime
+ * @param scope scope
+ * @param l list of expressions to evaluate
+ */
+lisp_value *lisp_progn(lisp_runtime *rt, lisp_scope *scope, lisp_list *l);
+
+/**
  * Given a list of function arguments, perform type checking and verify the
  * number of arguments according to a format string. The following formats are
  * recognized:
