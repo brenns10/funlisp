@@ -582,6 +582,7 @@ lisp_value *lisp_progn(lisp_runtime *rt, lisp_scope *scope, lisp_list *l);
  *     b - builtin
  *     t - type
  *     * - anything
+ *     R - Rest of arguments
  *
  * As an example, a function which takes an integer and a string, and prints the
  * string N times, might use the format string ``dS``.
@@ -592,6 +593,12 @@ lisp_value *lisp_progn(lisp_runtime *rt, lisp_scope *scope, lisp_list *l);
  *     lisp_integer *arg1;
  *     lisp_string *arg2;
  *     lisp_get_args(args, "dS", &arg1, &arg2);
+ *
+ * @note The format code 'R' is special and deserves some more attention. When
+ * used, it immediately ends argument processing, so it should only be used at
+ * the end of a format string.  It will resolve to the remaining unprocessed
+ * arguments as a list, provided that there is at least one (i.e. R will fail if
+ * the rest of the args is an empty list).
  *
  * @param list Argument list to type check and count
  * @param format Format string

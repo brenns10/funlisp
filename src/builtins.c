@@ -84,14 +84,13 @@ static lisp_value *lisp_builtin_cons(lisp_runtime *rt, lisp_scope *scope,
 static lisp_value *lisp_builtin_lambda(lisp_runtime *rt, lisp_scope *scope,
                                        lisp_value *a, void *user)
 {
-	lisp_list *argnames;
-	lisp_value *code;
+	lisp_list *argnames, *code;
 	lisp_list *our_args = (lisp_list*)a, *it;
 	lisp_lambda *lambda;
 	(void) user; /* unused */
 	(void) scope;
 
-	if (!lisp_get_args(our_args, "l*", &argnames, &code)) {
+	if (!lisp_get_args(our_args, "lR", &argnames, &code)) {
 		return lisp_error_new(rt, "expected argument list and code");
 	}
 

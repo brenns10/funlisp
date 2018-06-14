@@ -506,7 +506,7 @@ static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
 		return lisp_error_new(rt, "too many arguments to lambda call");
 	}
 
-	return lisp_eval(rt, inner, lambda->code);
+	return lisp_progn(rt, inner, lambda->code);
 }
 
 static void *lambda_expand_next(struct iterator *it)

@@ -137,15 +137,26 @@ static lisp_type *lisp_get_type(char c)
 int lisp_get_args(lisp_list *list, char *format, ...)
 {
 	lisp_value **v;
+	lisp_type *type;
 	va_list va;
 
 	va_start(va, format);
 	while (!lisp_nil_p((lisp_value*)list) && *format != '\0') {
-		lisp_type *type = lisp_get_type(*format);
+		v = va_arg(va, lisp_value**);
+
+		if (*format == 'R') {
+			/* R = Rest of arguments. Short circuits the get_args
+			 * operation, returning what's left.
+			 * NB: control-flow will never reach here if what's left
+			 * is nil, so R must have at least one item.
+			 */
+			*v = (lisp_value *) list;
+			return 1;
+		}
+		type = lisp_get_type(*format);
 		if (type != NULL && type != list->left->type) {
 			return 0;
 		}
-		v = va_arg(va, lisp_value**);
 		*v = list->left;
 		list = (lisp_list*)list->right;
 		format += 1;

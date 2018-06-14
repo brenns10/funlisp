@@ -130,7 +130,7 @@ struct lisp_builtin {
 struct lisp_lambda {
 	LISP_VALUE_HEAD;
 	lisp_list *args;
-	lisp_value *code;
+	lisp_list *code;
 	lisp_scope *closure;
 };
 
