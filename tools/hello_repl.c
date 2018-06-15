@@ -45,14 +45,16 @@ int main(int argc, char **argv)
 	for (;;) {
 		char *input;
 		lisp_value *value, *result;
+		int bytes;
 
 		input = readline("> ");
 		if (input == NULL)
 			break; /* Ctrl-D, EOF */
-		value = lisp_parse(rt, input);
+		bytes = lisp_parse_value(rt, input, 0, &value);
 		add_history(input);
 		free(input);
-		if (lisp_get_error(rt)) {
+		if (bytes < 0) {
+			/* parse error */
 			lisp_print_error(rt, stderr);
 			lisp_clear_error(rt);
 		} else if (!value)

@@ -33,7 +33,7 @@ typedef struct {
 #define COMMENT ';'
 
 
-static result lisp_parse_value(lisp_runtime *rt, char *input, int index);
+static result lisp_parse_value_internal(lisp_runtime *rt, char *input, int index);
 
 static result lisp_parse_integer(lisp_runtime *rt, char *input, int index)
 {
@@ -127,7 +127,7 @@ static result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 		return_result(lisp_nil_new(rt), index + 1);
 	}
 
-	r = lisp_parse_value(rt, input, index);
+	r = lisp_parse_value_internal(rt, input, index);
 	if (r.error) return r;
 	else if (!r.result) return_result_err(NULL, r.index, 1);
 	index = r.index;
@@ -143,7 +143,7 @@ static result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 			return_result_err(NULL, index, 1);
 		} else if (input[index] == '.') {
 			index++;
-			r = lisp_parse_value(rt, input, index);
+			r = lisp_parse_value_internal(rt, input, index);
 			if (r.error) return r;
 			else if (!r.result) return_result_err(NULL, r.index, 1);
 			index = r.index;
@@ -154,7 +154,7 @@ static result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 			l->right = lisp_nil_new(rt);
 			return_result(rv, index);
 		} else {
-			r = lisp_parse_value(rt, input, index);
+			r = lisp_parse_value_internal(rt, input, index);
 			if (r.error) return r;
 			else if (!r.result) return_result_err(NULL, r.index, 1);
 			l->right = lisp_new(rt, type_list);
@@ -188,14 +188,14 @@ static result lisp_parse_symbol(lisp_runtime *rt, char *input, int index)
 
 static result lisp_parse_quote(lisp_runtime *rt, char *input, int index)
 {
-	result r = lisp_parse_value(rt, input, index + 1);
+	result r = lisp_parse_value_internal(rt, input, index + 1);
 	if (r.error) return r;
 	else if (!r.result) return_result_err(NULL, r.index, 1);
 	r.result = lisp_quote(rt, r.result);
 	return r;
 }
 
-static result lisp_parse_value(lisp_runtime *rt, char *input, int index)
+static result lisp_parse_value_internal(lisp_runtime *rt, char *input, int index)
 {
 	index = skip_space_and_comments(input, index);
 
@@ -229,13 +229,17 @@ static void set_error_lineno(lisp_runtime *rt, char *input, int index)
 			rt->error_line++;
 }
 
-lisp_value *lisp_parse(lisp_runtime *rt, char *input)
+int lisp_parse_value(lisp_runtime *rt, char *input, int index, lisp_value **output)
 {
-	result r = lisp_parse_value(rt, input, 0);
+	int bytes;
+	result r = lisp_parse_value_internal(rt, input, 0);
+	bytes = r.index - index;
 	if (r.error) {
 		set_error_lineno(rt, input, r.index);
+		bytes = -1;
 	}
-	return r.result;
+	*output = r.result;
+	return bytes;
 }
 
 static char *read_file(FILE *input)
@@ -275,7 +279,7 @@ lisp_value *lisp_load_file(lisp_runtime *rt, lisp_scope *scope, FILE *input)
 	}
 
 	for (;;) {
-		r = lisp_parse_value(rt, contents, r.index);
+		r = lisp_parse_value_internal(rt, contents, r.index);
 		if (r.error) {
 			free(contents);
 			return NULL;

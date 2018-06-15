@@ -615,18 +615,28 @@ int lisp_get_args(lisp_list *list, char *format, ...);
  */
 
 /**
- * Parse a *single* expression from a string, returning it as a ::lisp_value. If
- * there is no expression, or if there is an error, return NULL. To tell the
- * difference between these conditions, use lisp_get_error() to see if there is
- * currently an error. If so, there was no expression (just whitespace and/or
- * comments). If there is currently an error, you may handle it or format it to
- * the user.
+ * Parse a *single* expression from @a input, starting at @a index. Sets the
+ * result as a ::lisp_value in @a output. Return the number of bytes parsed from
+ * @a input.
+ *
+ * When a parse error occurs, the return value is negative, and @a output is set
+ * to NULL. The error code and line number are set in the runtime, and may be
+ * retrieved with lisp_get_error().
+ *
+ * When the string contains no expression (only whitespace or comments), the
+ * return value will still be non-negative. @a output will be set to NULL. This
+ * situation is typically not an error, either meaning empty REPL input or the
+ * end of the file you are parsing.
+ *
  * @param rt runtime to create language objects in
- * @param input string
- * @return parsed expression
- * @retval NULL on error or no expression available
+ * @param input string to parse
+ * @param index position in @a input to start parsing
+ * @param output pointer to ``lisp_value **`` where we store the parsed
+ * expression.
+ * @return number of bytes processed from @a input
+ * @retval -1 when an error occurs during parsing
  */
-lisp_value *lisp_parse(lisp_runtime *rt, char *input);
+int lisp_parse_value(lisp_runtime *rt, char *input, int index, lisp_value **output);
 
 /**
  * Parse an entire file of input, evaluating it within a scope as we go. Return

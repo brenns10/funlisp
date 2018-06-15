@@ -33,19 +33,22 @@ int main(int argc, char **argv)
 	lisp_runtime *rt;
 	lisp_scope *scope;
 	lisp_value *code;
+	int bytes;
 
 	(void) argc; /* unused parameters */
 	(void) argv;
 
 	rt = lisp_runtime_new();
 	scope = lisp_new_default_scope(rt);
-	code = lisp_parse(rt,
+	bytes = lisp_parse_value(rt,
 		"(define double_or_square"
 		"  (lambda (x)"
 		"    (if (< x 10)"
 		"      (* x x)"
-		"      (* x 2))))"
+		"      (* x 2))))",
+		0, &code
 	);
+	assert(bytes >= 0);
 	lisp_eval(rt, scope, code);
 
 	call_double_or_square(rt, scope, 5);
