@@ -639,15 +639,45 @@ int lisp_get_args(lisp_list *list, char *format, ...);
 int lisp_parse_value(lisp_runtime *rt, char *input, int index, lisp_value **output);
 
 /**
- * Parse an entire file of input, evaluating it within a scope as we go. Return
- * the result of evaluating the last expression in the file. This is typically
- * useful for loading a file before running main.  See lisp_run_main_if_exists()
- * @warning This function performs garbage collection as it evaluates each
- * expression, marking only the scope which it evaluates within.
+ * Parse every expression contained in @a input. Return the parsed code as a
+ * list, with the first element being the symbol ``progn``, and the remaining
+ * elements being the parsed code. This may be evaluated using lisp_eval().
+ *
+ * When a parse error occurs, NULL is returned. Note that parse errors typically
+ * occur after memory allocation has occurred. Memory allocated by this function
+ * is not cleaned up on error, and must be garbage collected.
+ *
+ * Note that if the string is entirely empty, or only contains comments, then
+ * the progn will be empty, which currently causes an exception when evaluated.
+ * @param rt runtime
+ * @param input string to parse
+ * @return the code, fully parsed, within a progn block
+ * @retval NULL when an error occurs (see lisp_print_error())
+ */
+lisp_value *lisp_parse_progn(lisp_runtime *rt, char *input);
+
+/**
+ * Parse every expressioned contained in @a input, where input is a file.
+ * Behaves the same as lisp_parse_progn(), with the additional caveat that the
+ * entire file is loaded into memory at once. Any error reading from the file
+ * will be passed down (as a NULL return value).
+ * @param rt runtime
+ * @param input file to parse
+ * @return the code, fully parsed, within a progn block
+ * @retval NULL when an error occurs (see lisp_print_error())
+ */
+lisp_value *lisp_parse_progn(lisp_runtime *rt, FILE *input);
+
+/**
+ * Parse a file and evaluate its contents. This is roughly equivalent to:
+ * @code
+ * lisp_value *progn = lisp_parse_progn_f(rt, scope, input)
+ * lisp_eval(rt, scope, progn);
+ * @endcode
  * @param rt runtime
  * @param scope scope to evaluate within (usually a default scope)
  * @param input file to load as funlisp code
- * @return the parsed code
+ * @return the result of evaluating the last item
  * @retval NULL on empty file, or file read error
  */
 lisp_value *lisp_load_file(lisp_runtime *rt, lisp_scope *scope, FILE *input);

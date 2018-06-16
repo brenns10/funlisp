@@ -232,7 +232,7 @@ static void set_error_lineno(lisp_runtime *rt, char *input, int index)
 int lisp_parse_value(lisp_runtime *rt, char *input, int index, lisp_value **output)
 {
 	int bytes;
-	result r = lisp_parse_value_internal(rt, input, 0);
+	result r = lisp_parse_value_internal(rt, input, index);
 	bytes = r.index - index;
 	if (r.error) {
 		set_error_lineno(rt, input, r.index);
@@ -240,6 +240,31 @@ int lisp_parse_value(lisp_runtime *rt, char *input, int index, lisp_value **outp
 	}
 	*output = r.result;
 	return bytes;
+}
+
+lisp_value *lisp_parse_progn(lisp_runtime *rt, char *input)
+{
+	lisp_list *final_result, *prev;
+	lisp_value *expression;
+	int bytes, index=0;
+
+	final_result = (lisp_list*) lisp_new(rt, type_list);
+	final_result->left = (lisp_value*)lisp_symbol_new(rt, "progn");
+	prev = final_result;
+	for (;;) {
+		bytes = lisp_parse_value(rt, input, index, &expression);
+		index += bytes;
+		if (bytes < 0) {
+			return NULL; /* error! */
+		} else if (!expression) {
+			prev->right = lisp_nil_new(rt);
+			return (lisp_value*) final_result;
+		} else {
+			prev->right = (lisp_value*) lisp_list_new(
+					rt, expression, NULL);
+			prev = (lisp_list*) prev->right;
+		}
+	}
 }
 
 static char *read_file(FILE *input)
@@ -265,32 +290,24 @@ static char *read_file(FILE *input)
 	}
 }
 
-lisp_value *lisp_load_file(lisp_runtime *rt, lisp_scope *scope, FILE *input)
+lisp_value *lisp_parse_progn_f(lisp_runtime *rt, FILE *input)
 {
-	char *contents = read_file(input);
-	lisp_value *last_val = NULL;
-	result r;
-	r.index = 0;
-	r.result = NULL;
-
-	if (!contents) {
-		rt->error = "error reading file or allocating memory";
+	lisp_value *result;
+	char *input_string;
+	
+	input_string = read_file(input);
+	if (!input_string) {
+		rt->error = "error reading from input file";
 		return NULL;
 	}
+	result = lisp_parse_progn(rt, input_string);
+	free(input_string);
+	return result;
+}
 
-	for (;;) {
-		r = lisp_parse_value_internal(rt, contents, r.index);
-		if (r.error) {
-			free(contents);
-			return NULL;
-		} else if (!r.result) {
-			lisp_mark(rt, (lisp_value *) scope);
-			if (last_val)
-				lisp_mark(rt, last_val);
-			lisp_sweep(rt);
-			free(contents);
-			return last_val;
-		}
-		last_val = lisp_eval(rt, scope, r.result);
-	}
+lisp_value *lisp_load_file(lisp_runtime *rt, lisp_scope *scope, FILE *input)
+{
+	lisp_value *progn = lisp_parse_progn_f(rt, input);
+	lisp_error_check(progn);
+	return lisp_eval(rt, scope, progn);
 }
