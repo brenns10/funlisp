@@ -162,9 +162,10 @@ So, a format string for the plus function would be ``"dd"``, and the format
 string for the ``cons`` function is ``"**"``, because any two things may be put
 together in an s-expression. If nothing else, the :c:func:`lisp_get_args()`
 function can help you verify the number of arguments, if not their types. When
-it fails, it returns false, which you should typically handle by returning an
-error (:c:func:`lisp_error_new()`). If it doesn't fail, your function is free to
-do whatever logic you'd like.
+it fails, it returns false. It sets an internal interpreter error depending on
+what happened (too many arguments, not enough, types didn't matche, etc). You
+can handle this by simply returning NULL from your builtin.  If argument parsing
+doesn't fail, your function is free to do whatever logic you'd like.
 
 Finally, note that the signature includes a ``void *user`` parameter. This "user
 context" is specified when you register the builtin function, and passed back to
@@ -199,9 +200,6 @@ The current types (that you are likely to use) are:
 
 - ``lisp_symbol``: type that represents names. Contains ``sym``, which is a
   ``char*``.
-- ``lisp_error``: similar to a symbol in implementation, but represents an
-  error. Has the attribute ``message`` which contains the error message. Create
-  a new one with ``lisp_error_new(message)``.
 - ``lisp_integer``: contains attribute ``x``, an integer. Yes, it's allocated on
   the heap.  Get over it.
 - ``lisp_string``: another thing similar to a symbol in implementation, but this

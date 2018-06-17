@@ -26,7 +26,7 @@ static lisp_value *eval_error(lisp_runtime *rt, lisp_scope *s, lisp_value *v)
 {
 	(void)s;
 	(void)v;
-	return lisp_error_new(rt, "cannot evaluate this object");
+	return lisp_error(rt, LE_NOEVAL, "cannot evaluate this object");
 }
 
 static lisp_value *eval_same(lisp_runtime *rt, lisp_scope *s, lisp_value *v)
@@ -42,7 +42,7 @@ static lisp_value *call_error(lisp_runtime *rt, lisp_scope *s, lisp_value *c,
 	(void)s;
 	(void)c;
 	(void)v;
-	return lisp_error_new(rt, "not callable!");
+	return lisp_error(rt, LE_NOCALL, "not callable!");
 }
 
 static bool has_next_index_lt_state(struct iterator *iter)
@@ -190,11 +190,11 @@ static lisp_value *list_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *v)
 	lisp_list *list = (lisp_list*) v;
 
 	if (lisp_nil_p(v)) {
-		return lisp_error_new(rt, "Cannot call empty list");
+		return lisp_error(rt, LE_NOCALL, "Cannot call empty list");
 	}
 
 	if (list->right->type != type_list) {
-		return lisp_error_new(rt, "You may not call with an s-expression");
+		return lisp_error(rt, LE_NOCALL, "You may not call with an s-expression");
 	}
 	callable = lisp_eval(rt, scope, list->left);
 	lisp_error_check(callable);
@@ -500,10 +500,10 @@ static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
 	}
 
 	if (!lisp_nil_p((lisp_value*)it1)) {
-		return lisp_error_new(rt, "not enough arguments to lambda call");
+		return lisp_error(rt, LE_2FEW, "not enough arguments to lambda call");
 	}
 	if (!lisp_nil_p((lisp_value*)it2)) {
-		return lisp_error_new(rt, "too many arguments to lambda call");
+		return lisp_error(rt, LE_2MANY, "too many arguments to lambda call");
 	}
 
 	return lisp_progn(rt, inner, lambda->code);

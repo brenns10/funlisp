@@ -29,7 +29,7 @@ lisp_value *lisp_scope_lookup(lisp_runtime *rt, lisp_scope *scope,
 		if (scope->up) {
 			return lisp_scope_lookup(rt, scope->up, symbol);
 		} else {
-			return lisp_error_new(rt, "symbol not found in scope");
+			return lisp_error(rt, LE_NOTFOUND, "symbol not found in scope");
 		}
 	} else {
 		return v;
@@ -76,7 +76,7 @@ lisp_value *lisp_progn(lisp_runtime *rt, lisp_scope *scope, lisp_list *l)
 	lisp_value *v;
 
 	if (lisp_nil_p((lisp_value*)l))
-		return lisp_error_new(rt, "progn: need at least one arg");
+		return lisp_error(rt, LE_2FEW, "progn: need at least one arg");
 
 	while (1) {
 		v = lisp_eval(rt, scope, l->left);
@@ -134,7 +134,7 @@ static lisp_type *lisp_get_type(char c)
 	return NULL;
 }
 
-int lisp_get_args(lisp_list *list, char *format, ...)
+int lisp_get_args(lisp_runtime *rt, lisp_list *list, char *format, ...)
 {
 	lisp_value **v;
 	lisp_type *type;
@@ -155,13 +155,21 @@ int lisp_get_args(lisp_list *list, char *format, ...)
 		}
 		type = lisp_get_type(*format);
 		if (type != NULL && type != list->left->type) {
+			rt->error = "incorrect argument type";
+			rt->errno = LE_TYPE;
 			return 0;
 		}
 		*v = list->left;
 		list = (lisp_list*)list->right;
 		format += 1;
 	}
-	if (strlen(format) != 0 || !lisp_nil_p((lisp_value*)list)) {
+	if (*format != '\0') {
+		rt->error = "too many arguments";
+		rt->errno = LE_2MANY;
+		return 0;
+	} else if(!lisp_nil_p((lisp_value*)list)) {
+		rt->error = "not enough arguments";
+		rt->errno = LE_2FEW;
 		return 0;
 	}
 	return 1;
@@ -364,9 +372,10 @@ void lisp_dump_stack(lisp_runtime *rt, lisp_list *stack, FILE *file)
 	}
 }
 
-lisp_value *lisp_error_new(lisp_runtime *rt, char *message)
+lisp_value *lisp_error(lisp_runtime *rt, enum lisp_errno errno, char *message)
 {
 	rt->error = message;
+	rt->errno = errno;
 	rt->error_stack = rt->stack;
 	return NULL;
 }
@@ -393,7 +402,7 @@ void lisp_print_error(lisp_runtime *rt, FILE *file)
 	if (rt->error_line)
 		fprintf(file, "at line %d: ", rt->error_line);
 
-	fprintf(file, "%s\n\n", rt->error);
+	fprintf(file, "Error %d: %s\n\n", rt->errno, rt->error);
 
 	if (rt->error_stack)
 		lisp_dump_stack(rt, rt->error_stack, file);

@@ -476,15 +476,6 @@ lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *string);
 char *lisp_symbol_get(lisp_symbol *s);
 
 /**
- * Return a new error. This function will copy the @a message and free the copy
- * on garbage collection (much like lisp_string_new()).
- * @param rt runtime
- * @param message message to use for creating the error
- * @return a new error
- */
-lisp_value  *lisp_error_new(lisp_runtime *rt, char *message);
-
-/**
  * Create a new integer.
  * @param rt runtime
  * @param n the integer value
@@ -592,7 +583,7 @@ lisp_value *lisp_progn(lisp_runtime *rt, lisp_scope *scope, lisp_list *l);
  *
  *     lisp_integer *arg1;
  *     lisp_string *arg2;
- *     lisp_get_args(args, "dS", &arg1, &arg2);
+ *     lisp_get_args(rt, args, "dS", &arg1, &arg2);
  *
  * @note The format code 'R' is special and deserves some more attention. When
  * used, it immediately ends argument processing, so it should only be used at
@@ -600,13 +591,14 @@ lisp_value *lisp_progn(lisp_runtime *rt, lisp_scope *scope, lisp_list *l);
  * arguments as a list, provided that there is at least one (i.e. R will fail if
  * the rest of the args is an empty list).
  *
+ * @param rt runtime
  * @param list Argument list to type check and count
  * @param format Format string
  * @param ... Destination pointer to place results
  * @retval 1 on success (true)
  * @retval 0 on failure (false)
  */
-int lisp_get_args(lisp_list *list, char *format, ...);
+int lisp_get_args(lisp_runtime *rt, lisp_list *list, char *format, ...);
 
 /**
  * @}
@@ -657,16 +649,27 @@ int lisp_parse_value(lisp_runtime *rt, char *input, int index, lisp_value **outp
 lisp_value *lisp_parse_progn(lisp_runtime *rt, char *input);
 
 /**
+ * Parse every expression contained in @a file, and return the parsed code as a
+ * ``progn`` block. This function behaves same as lisp_parse_progn(). Additional
+ * errors may be raised due to I/O errors on @a file.
+ * @param rt runtime
+ * @param file file to parse
+ * @return the code, fully parsed, within a progn block
+ * @retval NULL when an error occurs (see lisp_print_error())
+ */
+lisp_value *lisp_parse_progn_f(lisp_runtime *rt, FILE *file);
+
+/**
  * Parse every expressioned contained in @a input, where input is a file.
  * Behaves the same as lisp_parse_progn(), with the additional caveat that the
  * entire file is loaded into memory at once. Any error reading from the file
  * will be passed down (as a NULL return value).
  * @param rt runtime
- * @param input file to parse
+ * @param input string to parse
  * @return the code, fully parsed, within a progn block
  * @retval NULL when an error occurs (see lisp_print_error())
  */
-lisp_value *lisp_parse_progn(lisp_runtime *rt, FILE *input);
+lisp_value *lisp_parse_progn(lisp_runtime *rt, char *input);
 
 /**
  * Parse a file and evaluate its contents. This is roughly equivalent to:
@@ -747,6 +750,39 @@ lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value);
  * @defgroup error Error Handling
  * @{
  */
+
+enum lisp_errno {
+	LE_ERROR=1,  /* a catch-all */
+	LE_EOF,      /* end of file while parsing */
+	LE_SYNTAX,   /* syntax error */
+	LE_FERROR,   /* error reading file */
+	LE_2MANY,    /* too many args */
+	LE_2FEW,     /* not enough args */
+	LE_TYPE,     /* wrong type arg in function */
+	LE_NOCALL,   /* not callable */
+	LE_NOEVAL,   /* not evaluate-able */
+	LE_NOTFOUND, /* not found */
+
+	LE_UNUSED__  /* don't use this, it's just for the trailing comma */
+};
+
+/**
+ * Raise an error in the interpreter and return NULL.
+ *
+ * This function is meant to be used within code that implements builtins. When
+ * an error condition is reached, functions may simply do something like this:
+ *
+ * @code
+ * if (some_error_condition())
+ *     return lisp_error(rt, LE_ERROR, "you broke something");
+ * @endcode
+ *
+ * @param rt runtime
+ * @param errno error number, for easy programatic acccess
+ * @param message message to show the user
+ * @return NULL
+ */
+lisp_value *lisp_error(lisp_runtime *rt, enum lisp_errno errno, char *message);
 
 /**
  * Dump the execution stack to a file. This is useful if you want to print a

@@ -16,7 +16,7 @@
 typedef struct {
 	lisp_value *result;
 	int index;
-	int error;
+	enum lisp_errno error;
 } result;
 
 #define return_result_err(v, i, e)                        \
@@ -42,7 +42,7 @@ static result lisp_parse_integer(lisp_runtime *rt, char *input, int index)
 	rv = sscanf(input + index, "%d%n", &v->x, &n);
 	if (rv != 1) {
 		rt->error = "syntax error: error parsing integer";
-		return_result_err(NULL, index, 1);
+		return_result_err(NULL, index, LE_SYNTAX);
 	} else {
 		return_result(v, index + n);
 	}
@@ -105,7 +105,7 @@ static result lisp_parse_string(lisp_runtime *rt, char *input, int index)
 	if (!input[i]) {
 		cb_destroy(&cb);
 		rt->error = "unexpected eof while parsing string";
-		return_result_err(NULL, i, 1);
+		return_result_err(NULL, i, LE_SYNTAX);
 	}
 	cb_trim(&cb);
 	str = (lisp_string*)lisp_new(rt, type_string);
@@ -122,7 +122,7 @@ static result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 	index = skip_space_and_comments(input, index);
 	if (!input[index]) {
 		rt->error = "unexpected eof while parsing list";
-		return_result_err(NULL, index, 1);
+		return_result_err(NULL, index, LE_EOF);
 	} else if (input[index] == ')') {
 		return_result(lisp_nil_new(rt), index + 1);
 	}
@@ -140,7 +140,7 @@ static result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 
 		if (!input[index]) {
 			rt->error = "unexpected eof while parsing list";
-			return_result_err(NULL, index, 1);
+			return_result_err(NULL, index, LE_EOF);
 		} else if (input[index] == '.') {
 			index++;
 			r = lisp_parse_value_internal(rt, input, index);
@@ -177,7 +177,7 @@ static result lisp_parse_symbol(lisp_runtime *rt, char *input, int index)
 	}
 	if (!input[index]) {
 		rt->error = "unexpected eof while parsing symbol";
-		return_result_err(NULL, index, 1);
+		return_result_err(NULL, index, LE_EOF);
 	}
 	s = (lisp_symbol*)lisp_new(rt, type_symbol);
 	s->sym = malloc(n + 1);
@@ -235,6 +235,7 @@ int lisp_parse_value(lisp_runtime *rt, char *input, int index, lisp_value **outp
 	result r = lisp_parse_value_internal(rt, input, index);
 	bytes = r.index - index;
 	if (r.error) {
+		rt->errno = r.error;
 		set_error_lineno(rt, input, r.index);
 		bytes = -1;
 	}
@@ -298,6 +299,7 @@ lisp_value *lisp_parse_progn_f(lisp_runtime *rt, FILE *input)
 	input_string = read_file(input);
 	if (!input_string) {
 		rt->error = "error reading from input file";
+		rt->errno = LE_FERROR;
 		return NULL;
 	}
 	result = lisp_parse_progn(rt, input_string);
