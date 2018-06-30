@@ -12,6 +12,7 @@
 static lisp_value *lisp_builtin_eval(lisp_runtime *rt, lisp_scope *scope,
                                      lisp_list *arguments, void *user)
 {
+	/* args are evaluated */
 	(void) user; /* unused */
 	return lisp_eval(rt, scope, arguments->left);
 }
@@ -19,6 +20,7 @@ static lisp_value *lisp_builtin_eval(lisp_runtime *rt, lisp_scope *scope,
 static lisp_value *lisp_builtin_car(lisp_runtime *rt, lisp_scope *scope,
                                     lisp_list *arglist, void *user)
 {
+	/* args are evaluated */
 	lisp_list *firstarg;
 	(void) user; /* unused */
 	(void) scope;
@@ -33,13 +35,13 @@ static lisp_value *lisp_builtin_car(lisp_runtime *rt, lisp_scope *scope,
 }
 
 static lisp_value *lisp_builtin_cdr(lisp_runtime *rt, lisp_scope *scope,
-                                    lisp_list *a, void *user)
+                                    lisp_list *arglist, void *user)
 {
+	/* args are evaluated */
 	lisp_list *firstarg;
-	lisp_list *arglist = lisp_eval_list(rt, scope, a);
 	(void) user; /* unused */
+	(void) scope;
 
-	lisp_error_check(arglist);
 	if (!lisp_get_args(rt, arglist, "l", &firstarg)) {
 		return NULL;
 	}
@@ -49,9 +51,11 @@ static lisp_value *lisp_builtin_cdr(lisp_runtime *rt, lisp_scope *scope,
 static lisp_value *lisp_builtin_quote(lisp_runtime *rt, lisp_scope *scope,
                                       lisp_list *arglist, void *user)
 {
+	/* args NOT evaluated */
 	lisp_value *firstarg;
 	(void) user; /* unused */
 	(void) scope;
+
 	if (!lisp_get_args(rt, arglist, "*", &firstarg)) {
 		return NULL;
 	}
@@ -59,13 +63,14 @@ static lisp_value *lisp_builtin_quote(lisp_runtime *rt, lisp_scope *scope,
 }
 
 static lisp_value *lisp_builtin_cons(lisp_runtime *rt, lisp_scope *scope,
-                                     lisp_list *a, void *user)
+                                     lisp_list *arglist, void *user)
 {
-	lisp_value *a1;
-	lisp_value *l;
-	lisp_list *new, *arglist = lisp_eval_list(rt, scope, a);
+	/* args are evaluated */
+	lisp_value *a1, *l;
+	lisp_list *new;
 	(void) user; /* unused */
-	lisp_error_check(arglist);
+	(void) scope;
+
 	if (!lisp_get_args(rt, arglist, "**", &a1, &l)) {
 		return NULL;
 	}
@@ -78,8 +83,8 @@ static lisp_value *lisp_builtin_cons(lisp_runtime *rt, lisp_scope *scope,
 static lisp_value *lisp_builtin_lambda(lisp_runtime *rt, lisp_scope *scope,
                                        lisp_list *arguments, void *user)
 {
-	lisp_list *argnames, *code;
-	lisp_list *it;
+	/* args NOT evaluated */
+	lisp_list *argnames, *code, *it;
 	lisp_lambda *lambda;
 	(void) user; /* unused */
 	(void) scope;
@@ -106,8 +111,8 @@ static lisp_value *lisp_builtin_lambda(lisp_runtime *rt, lisp_scope *scope,
 static lisp_value *lisp_builtin_macro(lisp_runtime *rt, lisp_scope *scope,
                                        lisp_list *arguments, void *user)
 {
-	lisp_list *argnames, *code;
-	lisp_list *it;
+	/* args NOT evaluated */
+	lisp_list *argnames, *code, *it;
 	lisp_lambda *lambda;
 	(void) user; /* unused */
 	(void) scope;
@@ -134,28 +139,29 @@ static lisp_value *lisp_builtin_macro(lisp_runtime *rt, lisp_scope *scope,
 static lisp_value *lisp_builtin_define(lisp_runtime *rt, lisp_scope *scope,
                                        lisp_list *a, void *user)
 {
+	/* args NOT evaluated */
 	lisp_symbol *s;
-	lisp_value *expr, *evald;
+	lisp_value *expr;
 	(void) user; /* unused */
 
 	if (!lisp_get_args(rt, a, "s*", &s, &expr)) {
 		return NULL;
 	}
 
-	evald = lisp_eval(rt, scope, expr);
-	lisp_error_check(evald);
-	lisp_scope_bind(scope, s, evald);
-	return evald;
+	expr = lisp_eval(rt, scope, expr);
+	lisp_error_check(expr);
+	lisp_scope_bind(scope, s, expr);
+	return expr;
 }
 
 static lisp_value *lisp_builtin_plus(lisp_runtime *rt, lisp_scope *scope,
-                                     lisp_list *a, void *user)
+                                     lisp_list *args, void *user)
 {
-	int sum = 0;
+	/* args are evaluated */
 	lisp_integer *i;
-	lisp_list *args = lisp_eval_list(rt, scope, a);
+	int sum = 0;
 	(void) user; /* unused */
-	lisp_error_check(args);
+	(void) scope;
 
 	lisp_for_each(args) {
 		if (args->left->type != type_integer) {
@@ -171,15 +177,14 @@ static lisp_value *lisp_builtin_plus(lisp_runtime *rt, lisp_scope *scope,
 }
 
 static lisp_value *lisp_builtin_minus(lisp_runtime *rt, lisp_scope *scope,
-                                      lisp_list *a, void *user)
+                                      lisp_list *args, void *user)
 {
-	int val = 0, len;
+	/* args are evaluated */
 	lisp_integer *i;
-	lisp_list *args;
+	int val = 0, len;
 	(void) user; /* unused */
+	(void) scope;
 
-	args = lisp_eval_list(rt, scope, a);
-	lisp_error_check(args);
 	len = lisp_list_length(args);
 
 	if (len < 1) {
@@ -206,13 +211,13 @@ static lisp_value *lisp_builtin_minus(lisp_runtime *rt, lisp_scope *scope,
 }
 
 static lisp_value *lisp_builtin_multiply(lisp_runtime *rt, lisp_scope *scope,
-                                         lisp_list *a, void *user)
+                                         lisp_list *args, void *user)
 {
+	/* args are evaluated */
 	lisp_integer *i;
 	int product = 1;
-	lisp_list *args = lisp_eval_list(rt, scope, a);
 	(void) user; /* unused */
-	lisp_error_check(args);
+	(void) scope;
 
 	lisp_for_each(args) {
 		if (args->left->type != type_integer) {
@@ -228,14 +233,14 @@ static lisp_value *lisp_builtin_multiply(lisp_runtime *rt, lisp_scope *scope,
 }
 
 static lisp_value *lisp_builtin_divide(lisp_runtime *rt, lisp_scope *scope,
-                                       lisp_list *a, void *user)
+                                       lisp_list *args, void *user)
 {
+	/* args are evaluated */
 	lisp_integer *i;
 	int val = 0, len;
-	lisp_list *args = lisp_eval_list(rt, scope, a);
 	(void) user; /* unused */
+	(void) scope;
 
-	lisp_error_check(args);
 	len = lisp_list_length(args);
 
 	if (len < 1) {
@@ -260,87 +265,46 @@ static lisp_value *lisp_builtin_divide(lisp_runtime *rt, lisp_scope *scope,
 	return (lisp_value*)i;
 }
 
-static lisp_value *lisp_builtin_cmp_util(lisp_runtime *rt, lisp_scope *scope,
-                                         lisp_list *a, void *user)
-{
-	lisp_integer *first, *second, *result;
-	lisp_list *args = lisp_eval_list(rt, scope, a);
-	(void) user; /* unused */
-	lisp_error_check(args);
+#define CMP_EQ (void*) 1
+#define CMP_NE (void*) 2
+#define CMP_LT (void*) 3
+#define CMP_LE (void*) 4
+#define CMP_GT (void*) 5
+#define CMP_GE (void*) 6
 
-	if (!lisp_get_args(rt, (lisp_list*)args, "dd", &first, &second)) {
+static lisp_value *lisp_builtin_cmp(lisp_runtime *rt, lisp_scope *scope,
+                                    lisp_list *args, void *op)
+{
+	/* args are evaluated */
+	lisp_integer *first, *second, *result;
+	(void) scope; /* unused */
+
+	if (!lisp_get_args(rt, args, "dd", &first, &second)) {
 		return NULL;
 	}
 
 	result = (lisp_integer*)lisp_new(rt, type_integer);
-	result->x = first->x - second->x;
+	if (op == CMP_EQ) {
+		result->x = first->x == second->x;
+	} else if (op == CMP_NE) {
+		result->x = first->x != second->x;
+	} else if (op == CMP_LT) {
+		result->x = first->x < second->x;
+	} else if (op == CMP_LE) {
+		result->x = first->x <= second->x;
+	} else if (op == CMP_GT) {
+		result->x = first->x > second->x;
+	} else {
+		result->x = first->x >= second->x;
+	}
+
 	return (lisp_value*)result;
-}
-
-static lisp_value *lisp_builtin_eq(lisp_runtime *rt, lisp_scope *scope,
-                                   lisp_list *a, void *user)
-{
-	lisp_integer *v = (lisp_integer*)lisp_builtin_cmp_util(rt, scope, a, user);
-	(void) user; /* unused */
-	lisp_error_check(v);
-	if (v->type == type_integer) {
-		v->x = (v->x == 0);
-	}
-	return (lisp_value*)v;
-}
-
-static lisp_value *lisp_builtin_gt(lisp_runtime *rt, lisp_scope *scope,
-                                   lisp_list *a, void *user)
-{
-	lisp_integer *v = (lisp_integer*)lisp_builtin_cmp_util(rt, scope, a, user);
-	(void) user; /* unused */
-	lisp_error_check(v);
-	if (v->type == type_integer) {
-		v->x = (v->x > 0);
-	}
-	return (lisp_value*)v;
-}
-
-static lisp_value *lisp_builtin_ge(lisp_runtime *rt, lisp_scope *scope,
-                                   lisp_list *a, void *user)
-{
-	lisp_integer *v = (lisp_integer*)lisp_builtin_cmp_util(rt, scope, a, user);
-	(void) user; /* unused */
-	lisp_error_check(v);
-	if (v->type == type_integer) {
-		v->x = (v->x >= 0);
-	}
-	return (lisp_value*)v;
-}
-
-static lisp_value *lisp_builtin_lt(lisp_runtime *rt, lisp_scope *scope,
-                                   lisp_list *a, void *user)
-{
-	lisp_integer *v = (lisp_integer*)lisp_builtin_cmp_util(rt, scope, a, user);
-	(void) user; /* unused */
-	lisp_error_check(v);
-	if (v->type == type_integer) {
-		v->x = (v->x < 0);
-	}
-	return (lisp_value*)v;
-}
-
-static lisp_value *lisp_builtin_le(lisp_runtime *rt, lisp_scope *scope,
-                                   lisp_list *a, void *user)
-{
-	lisp_integer *v = (lisp_integer*)lisp_builtin_cmp_util(rt, scope, a, user);
-	(void) user; /* unused */
-	lisp_error_check(v);
-
-	if (v->type == type_integer) {
-		v->x = (v->x <= 0);
-	}
-	return (lisp_value*)v;
 }
 
 static lisp_value *lisp_builtin_if(lisp_runtime *rt, lisp_scope *scope,
                                    lisp_list *a, void *user)
 {
+	/* args NOT evaluated */
 	lisp_value *condition, *body_true, *body_false;
 	(void) user; /* unused */
 
@@ -358,15 +322,13 @@ static lisp_value *lisp_builtin_if(lisp_runtime *rt, lisp_scope *scope,
 }
 
 static lisp_value *lisp_builtin_null_p(lisp_runtime *rt, lisp_scope *scope,
-                                       lisp_list *a, void *user)
+                                       lisp_list *args, void *user)
 {
+	/* args are evaluated */
 	lisp_integer *result;
 	lisp_value *v;
-	lisp_list *args;
-	
 	(void) user; /* unused */
-	args = lisp_eval_list(rt, scope, a);
-	lisp_error_check(args);
+	(void) scope;
 
 	if (!lisp_get_args(rt, args, "*", &v)) {
 		return NULL;
@@ -428,23 +390,20 @@ static lisp_list *advance_lists(lisp_runtime *rt, lisp_list *list_of_lists)
 }
 
 static lisp_value *lisp_builtin_map(lisp_runtime *rt, lisp_scope *scope,
-                                    lisp_list *a, void *user)
+                                    lisp_list *args, void *user)
 {
+	/* args are evaluated */
 	lisp_value *f;
-	lisp_list *ret = NULL, *args, *rv;
-	lisp_list *map_args;
+	lisp_list *ret = NULL, *rv;
 	(void) user; /* unused */
 
-	map_args = lisp_eval_list(rt, scope, a);
-	lisp_error_check(map_args);
-
 	/* Get the function from the first argument in the list. */
-	f = map_args->left;
-	if (map_args->right->type != type_list) {
+	f = args->left;
+	if (args->right->type != type_list) {
 		return lisp_error(rt, LE_2FEW, "need at least two arguments");
 	}
-	map_args = (lisp_list*) map_args->right;
-	while ((args = get_quoted_left_items(rt, map_args)) != NULL) {
+	args = (lisp_list*) args->right;
+	while ((args = get_quoted_left_items(rt, args)) != NULL) {
 		if (ret == NULL) {
 			ret = (lisp_list*) lisp_new(rt, type_list);
 			rv = ret;
@@ -454,7 +413,7 @@ static lisp_value *lisp_builtin_map(lisp_runtime *rt, lisp_scope *scope,
 		}
 		ret->left = lisp_call(rt, scope, f, (lisp_value*)args);
 		lisp_error_check(ret->left);
-		map_args = advance_lists(rt, map_args);
+		args = advance_lists(rt, args);
 	}
 	ret->right = lisp_nil_new(rt);
 	return (lisp_value*) rv;
@@ -471,15 +430,15 @@ static lisp_list *lisp_new_pair_list(lisp_runtime *rt, lisp_value *one, lisp_val
 	return first_node;
 }
 
-static lisp_value *lisp_builtin_reduce(lisp_runtime *rt, lisp_scope *scope, lisp_list *a, void *user)
+static lisp_value *lisp_builtin_reduce(lisp_runtime *rt, lisp_scope *scope,
+                                       lisp_list *args, void *user)
 {
-	lisp_list *args, *list;
+	/* args are evaluated */
+	lisp_list *list;
 	lisp_value *callable, *initializer;
 	int length;
 	(void) user; /* unused */
 
-	args = lisp_eval_list(rt, scope, a);
-	lisp_error_check(args);
 	length = lisp_list_length(args);
 
 	if (length == 2) {
@@ -510,14 +469,13 @@ static lisp_value *lisp_builtin_reduce(lisp_runtime *rt, lisp_scope *scope, lisp
 	return initializer;
 }
 
-static lisp_value *lisp_builtin_print(lisp_runtime *rt, lisp_scope *scope, lisp_list *a, void *user)
+static lisp_value *lisp_builtin_print(lisp_runtime *rt, lisp_scope *scope,
+                                      lisp_list *args, void *user)
 {
+	/* args are evaluated */
 	lisp_value *v;
-	lisp_list *args;
 	(void) user; /* unused */
-
-	args = lisp_eval_list(rt, scope, a);
-	lisp_error_check(args);
+	(void) scope;
 
 	if (!lisp_get_args(rt, args, "*", &v)) {
 		return NULL;
@@ -531,7 +489,7 @@ static lisp_value *lisp_builtin_print(lisp_runtime *rt, lisp_scope *scope, lisp_
 static lisp_value *lisp_builtin_dump_stack(lisp_runtime *rt, lisp_scope *scope,
                                            lisp_list *a, void *user)
 {
-	/* NB: This is very debugging oriented. We don't even eval arguments! */
+	/* args are evaluated (but unused) */
 	(void) scope; /* unused args */
 	(void) a;
 	(void) user;
@@ -542,6 +500,7 @@ static lisp_value *lisp_builtin_dump_stack(lisp_runtime *rt, lisp_scope *scope,
 static lisp_value *lisp_builtin_progn(lisp_runtime *rt, lisp_scope *scope,
                                       lisp_list *a, void *user)
 {
+	/* args NOT evaluated */
 	(void) user; /* unused */
 	return lisp_progn(rt, scope, a);
 }
@@ -549,9 +508,11 @@ static lisp_value *lisp_builtin_progn(lisp_runtime *rt, lisp_scope *scope,
 static lisp_value *lisp_builtin_unquote(lisp_runtime *rt, lisp_scope *scope,
                                         lisp_list *arglist, void *user)
 {
+	/* args NOT evaluated */
 	lisp_value *firstarg;
 	(void) user; /* unused */
 	(void) scope;
+
 	if (!lisp_get_args(rt, arglist, "*", &firstarg)) {
 		return NULL;
 	}
@@ -586,9 +547,11 @@ static lisp_value *lisp_quasiquote(lisp_runtime *rt, lisp_scope *scope,
 static lisp_value *lisp_builtin_quasiquote(lisp_runtime *rt, lisp_scope *scope,
                                            lisp_list *arglist, void *user)
 {
+	/* args NOT evaluated */
 	lisp_value *firstarg;
 	(void) user; /* unused */
 	(void) scope;
+
 	if (!lisp_get_args(rt, arglist, "*", &firstarg)) {
 		return NULL;
 	}
@@ -599,28 +562,28 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
 	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval, NULL, 1);
 	lisp_scope_add_builtin(rt, scope, "car", lisp_builtin_car, NULL, 1);
-	lisp_scope_add_builtin(rt, scope, "cdr", lisp_builtin_cdr, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "cdr", lisp_builtin_cdr, NULL, 1);
 	lisp_scope_add_builtin(rt, scope, "quote", lisp_builtin_quote, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "cons", lisp_builtin_cons, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "cons", lisp_builtin_cons, NULL, 1);
 	lisp_scope_add_builtin(rt, scope, "lambda", lisp_builtin_lambda, NULL, 0);
 	lisp_scope_add_builtin(rt, scope, "macro", lisp_builtin_macro, NULL, 0);
 	lisp_scope_add_builtin(rt, scope, "define", lisp_builtin_define, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "+", lisp_builtin_plus, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "-", lisp_builtin_minus, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "*", lisp_builtin_multiply, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "/", lisp_builtin_divide, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "==", lisp_builtin_eq, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "=", lisp_builtin_eq, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, ">", lisp_builtin_gt, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, ">=", lisp_builtin_ge, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "<", lisp_builtin_lt, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "<=", lisp_builtin_le, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "+", lisp_builtin_plus, NULL, 1);
+	lisp_scope_add_builtin(rt, scope, "-", lisp_builtin_minus, NULL, 1);
+	lisp_scope_add_builtin(rt, scope, "*", lisp_builtin_multiply, NULL, 1);
+	lisp_scope_add_builtin(rt, scope, "/", lisp_builtin_divide, NULL, 1);
+	lisp_scope_add_builtin(rt, scope, "==", lisp_builtin_cmp, CMP_EQ, 1);
+	lisp_scope_add_builtin(rt, scope, "=", lisp_builtin_cmp, CMP_EQ, 1);
+	lisp_scope_add_builtin(rt, scope, ">", lisp_builtin_cmp, CMP_GT, 1);
+	lisp_scope_add_builtin(rt, scope, ">=", lisp_builtin_cmp, CMP_GE, 1);
+	lisp_scope_add_builtin(rt, scope, "<", lisp_builtin_cmp, CMP_LT, 1);
+	lisp_scope_add_builtin(rt, scope, "<=", lisp_builtin_cmp, CMP_LE, 1);
 	lisp_scope_add_builtin(rt, scope, "if", lisp_builtin_if, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "null?", lisp_builtin_null_p, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "map", lisp_builtin_map, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "reduce", lisp_builtin_reduce, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "print", lisp_builtin_print, NULL, 0);
-	lisp_scope_add_builtin(rt, scope, "dump-stack", lisp_builtin_dump_stack, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "null?", lisp_builtin_null_p, NULL, 1);
+	lisp_scope_add_builtin(rt, scope, "map", lisp_builtin_map, NULL, 1);
+	lisp_scope_add_builtin(rt, scope, "reduce", lisp_builtin_reduce, NULL, 1);
+	lisp_scope_add_builtin(rt, scope, "print", lisp_builtin_print, NULL, 1);
+	lisp_scope_add_builtin(rt, scope, "dump-stack", lisp_builtin_dump_stack, NULL, 1);
 	lisp_scope_add_builtin(rt, scope, "progn", lisp_builtin_progn, NULL, 0);
 	lisp_scope_add_builtin(rt, scope, "unquote", lisp_builtin_unquote, NULL, 0);
 	lisp_scope_add_builtin(rt, scope, "quasiquote", lisp_builtin_quasiquote, NULL, 0);
