@@ -6,17 +6,19 @@ project! The primary goals of this project are ease of embedding, good
 portability, and excellent documentation. Check out the [documentation][] or
 grab the source and give it a try:
 
-    $ make bin/repl
-    $ bin/repl
+    $ make bin/funlisp
+    $ bin/funlisp
     > (+ 5 5)
     10
+    > ^D
+    $ bin/funlisp scripts/hello_world.lisp
+    hello world
 
 Since funlisp is aimed at being easily embeddable, the [tools/](tools/)
-directory is full of sample C programs using the library. There are also sample
-scripts within [scripts/](scripts/). You can run them with the `runfile` tool:
-
-    $ make bin/runfile
-    $ bin/runfile scripts/hello_world.lisp
+directory is full of sample C programs using the library. The `funlisp`
+interpreter and script runner is an example of such a program. There are simple
+REPL's and script runners as well as examples of function calls between C and
+lisp.
 
 [Read the Docs!][documentation]
 

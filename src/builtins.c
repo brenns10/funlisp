@@ -571,7 +571,7 @@ static lisp_value *lisp_quasiquote(lisp_runtime *rt, lisp_scope *scope,
 	lisp_list *vl;
 	lisp_symbol *vlls;
 
-	if (v->type != type_list) {
+	if (v->type != type_list || lisp_nil_p(v)) {
 		return v;
 	}
 
