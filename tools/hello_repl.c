@@ -1,11 +1,9 @@
 /*
- * hello_repl.c: A simple read-eval-print loop for funlisp, with builtin
- * functions registered.
+ * hello_repl.c: very basic read-eval-print loop, with builtins
  *
  * Stephen Brennan <stephen@brennan.io>
  */
 
-#include <editline/readline.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -31,6 +29,7 @@ static lisp_value *say_hello(lisp_runtime *rt, lisp_scope *scope,
 
 int main(int argc, char **argv)
 {
+	char input[256];
 	lisp_runtime *rt = lisp_runtime_new();
 	lisp_scope *scope = lisp_new_default_scope(rt);
 
@@ -43,22 +42,24 @@ int main(int argc, char **argv)
 	lisp_scope_add_builtin(rt, scope, "hello_from_stephen", say_hello, "Stephen");
 
 	for (;;) {
-		char *input;
 		lisp_value *value, *result;
 		int bytes;
 
-		input = readline("> ");
-		if (input == NULL)
-			break; /* Ctrl-D, EOF */
+		printf("> ");
+		fflush(stdout);
+		if (!fgets(input, sizeof(input), stdin))
+			break;
+
 		bytes = lisp_parse_value(rt, input, 0, &value);
-		add_history(input);
-		free(input);
 		if (bytes < 0) {
 			/* parse error */
 			lisp_print_error(rt, stderr);
 			lisp_clear_error(rt);
-		} else if (!value)
-			continue; /* blank line */
+			continue;
+		} else if (!value) {
+			/* empty line */
+			continue;
+		}
 		result = lisp_eval(rt, scope, value);
 		if (!result) {
 			lisp_print_error(rt, stderr);

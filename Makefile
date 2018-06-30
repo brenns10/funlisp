@@ -20,10 +20,10 @@ bin/libfunlisp.a: $(OBJS)
 	ar rcs $@ $^
 
 bin/repl: tools/repl.o bin/libfunlisp.a
-	$(CC) -ledit $^ -o $@
+	$(CC) $^ -o $@
 
 bin/hello_repl: tools/hello_repl.o bin/libfunlisp.a
-	$(CC) -ledit $^ -o $@
+	$(CC) $^ -o $@
 
 bin/runfile:  tools/runfile.o bin/libfunlisp.a
 	$(CC) $^ -o $@
