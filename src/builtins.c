@@ -94,11 +94,10 @@ static lisp_value *lisp_builtin_lambda(lisp_runtime *rt, lisp_scope *scope,
 	}
 
 	it = argnames;
-	while (!lisp_nil_p((lisp_value*)it)) {
+	lisp_for_each(it) {
 		if (it->left->type != type_symbol) {
 			return lisp_error(rt, LE_TYPE, "argument names must be symbols");
 		}
-		it = (lisp_list*) it->right;
 	}
 
 	lambda = (lisp_lambda*)lisp_new(rt, type_lambda);
@@ -134,13 +133,12 @@ static lisp_value *lisp_builtin_plus(lisp_runtime *rt, lisp_scope *scope,
 	(void) user; /* unused */
 	lisp_error_check(args);
 
-	while (!lisp_nil_p((lisp_value*)args)) {
+	lisp_for_each(args) {
 		if (args->left->type != type_integer) {
 			return lisp_error(rt, LE_TYPE, "expect integers for addition");
 		}
 		i = (lisp_integer*) args->left;
 		sum += i->x;
-		args = (lisp_list*)args->right;
 	}
 
 	i = (lisp_integer*)lisp_new(rt, type_integer);
@@ -169,13 +167,12 @@ static lisp_value *lisp_builtin_minus(lisp_runtime *rt, lisp_scope *scope,
 		i = (lisp_integer*) args->left;
 		val = i->x;
 		args = (lisp_list*)args->right;
-		while (!lisp_nil_p((lisp_value*)args)) {
+		lisp_for_each(args) {
 			if (args->left->type != type_integer) {
 				return lisp_error(rt, LE_TYPE, "expected integer");
 			}
 			i = (lisp_integer*) args->left;
 			val -= i->x;
-			args = (lisp_list*) args->right;
 		}
 	}
 
@@ -193,13 +190,12 @@ static lisp_value *lisp_builtin_multiply(lisp_runtime *rt, lisp_scope *scope,
 	(void) user; /* unused */
 	lisp_error_check(args);
 
-	while (!lisp_nil_p((lisp_value*)args)) {
+	lisp_for_each(args) {
 		if (args->left->type != type_integer) {
 			return lisp_error(rt, LE_TYPE, "expect integers for multiplication");
 		}
 		i = (lisp_integer*) args->left;
 		product *= i->x;
-		args = (lisp_list*)args->right;
 	}
 
 	i = (lisp_integer*)lisp_new(rt, type_integer);
@@ -224,7 +220,7 @@ static lisp_value *lisp_builtin_divide(lisp_runtime *rt, lisp_scope *scope,
 	i = (lisp_integer*) args->left;
 	val = i->x;
 	args = (lisp_list*)args->right;
-	while (!lisp_nil_p((lisp_value*)args)) {
+	lisp_for_each(args) {
 		if (args->left->type != type_integer) {
 			return lisp_error(rt, LE_TYPE, "expected integer");
 		}
@@ -233,7 +229,6 @@ static lisp_value *lisp_builtin_divide(lisp_runtime *rt, lisp_scope *scope,
 			return lisp_error(rt, LE_ERROR, "divide by zero");
 		}
 		val /= i->x;
-		args = (lisp_list*) args->right;
 	}
 
 	i = (lisp_integer*)lisp_new(rt, type_integer);
@@ -362,7 +357,7 @@ static lisp_list *get_quoted_left_items(lisp_runtime *rt, lisp_list *list_of_lis
 {
 	lisp_list *left_items = NULL, *rv, *l;
 
-	while (!lisp_nil_p((lisp_value*)list_of_lists)) {
+	lisp_for_each(list_of_lists) {
 		/* Create or advance left_items to the next list. */
 		if (left_items == NULL) {
 			left_items = (lisp_list*) lisp_new(rt, type_list);
@@ -378,7 +373,6 @@ static lisp_list *get_quoted_left_items(lisp_runtime *rt, lisp_list *list_of_lis
 		/* Get the next node in the list and get the argument. */
 		l = (lisp_list*) list_of_lists->left;
 		left_items->left = lisp_quote(rt, l->left);
-		list_of_lists = (lisp_list*) list_of_lists->right;
 	}
 	left_items->right = lisp_nil_new(rt);
 	return rv;
@@ -388,7 +382,7 @@ static lisp_list *advance_lists(lisp_runtime *rt, lisp_list *list_of_lists)
 {
 	lisp_list *right_items = NULL, *rv, *l;
 
-	while (!lisp_nil_p((lisp_value*)list_of_lists)) {
+	lisp_for_each(list_of_lists) {
 		/* Create or advance left_items to the next list. */
 		if (right_items == NULL) {
 			right_items = (lisp_list*) lisp_new(rt, type_list);
@@ -404,7 +398,6 @@ static lisp_list *advance_lists(lisp_runtime *rt, lisp_list *list_of_lists)
 		/* Get the next node in the list and get the argument. */
 		l = (lisp_list*) list_of_lists->left;
 		right_items->left = l->right;
-		list_of_lists = (lisp_list*) list_of_lists->right;
 	}
 	right_items->right = lisp_nil_new(rt);
 	return rv;
@@ -485,11 +478,10 @@ static lisp_value *lisp_builtin_reduce(lisp_runtime *rt, lisp_scope *scope, lisp
 		return lisp_error(rt, LE_2MANY, "reduce: 2 or 3 arguments required");
 	}
 
-	while (!lisp_nil_p((lisp_value*)list)) {
+	lisp_for_each(list) {
 		initializer = lisp_call(rt, scope, callable,
 		                        (lisp_value*) lisp_new_pair_list(rt, initializer, list->left));
 		lisp_error_check(initializer);
-		list = (lisp_list*) list->right;
 	}
 	return initializer;
 }

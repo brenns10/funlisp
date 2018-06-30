@@ -365,12 +365,10 @@ void lisp_dump_stack(lisp_runtime *rt, lisp_list *stack, FILE *file)
 		stack = rt->stack;
 
 	fprintf(file, "Stack trace (most recent call first):\n");
-	while (!lisp_nil_p((lisp_value *) stack)) {
+	lisp_for_each(stack) {
 		fprintf(file, "  ");
 		lisp_print(file, stack->left);
 		fprintf(file, "\n");
-
-		stack = (lisp_list *) stack->right;
 	}
 }
 
