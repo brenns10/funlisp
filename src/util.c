@@ -57,10 +57,10 @@ lisp_value *lisp_scope_lookup_string(lisp_runtime *rt, lisp_scope *scope, char *
 }
 
 void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
-                            lisp_builtin_func call, void *user)
+                            lisp_builtin_func call, void *user, int evald)
 {
 	lisp_symbol *symbol = lisp_symbol_new(rt, name);
-	lisp_builtin *builtin = lisp_builtin_new(rt, name, call, user);
+	lisp_builtin *builtin = lisp_builtin_new(rt, name, call, user, evald);
 	lisp_scope_bind(scope, symbol, (lisp_value*)builtin);
 }
 
@@ -284,12 +284,13 @@ lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
 }
 
 lisp_builtin *lisp_builtin_new(lisp_runtime *rt, char *name,
-                               lisp_builtin_func call, void *user)
+                               lisp_builtin_func call, void *user, int evald)
 {
 	lisp_builtin *builtin = (lisp_builtin*)lisp_new(rt, type_builtin);
 	builtin->call = call;
 	builtin->name = name;
 	builtin->user = user;
+	builtin->evald = evald;
 	return builtin;
 }
 

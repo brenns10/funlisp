@@ -432,6 +432,7 @@ static lisp_value *builtin_new()
 	lisp_builtin *builtin = malloc(sizeof(lisp_builtin));
 	builtin->call = NULL;
 	builtin->name = NULL;
+	builtin->evald = 0;
 	return (lisp_value*) builtin;
 }
 
@@ -439,6 +440,10 @@ static lisp_value *builtin_call(lisp_runtime *rt, lisp_scope *scope,
                                 lisp_value *c, lisp_value *arguments)
 {
 	lisp_builtin *builtin = (lisp_builtin*) c;
+	if (builtin->evald) {
+		arguments = lisp_eval_list(rt, scope, arguments);
+		lisp_error_check(arguments);
+	}
 	return builtin->call(rt, scope, arguments, builtin->user);
 }
 

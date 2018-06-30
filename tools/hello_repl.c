@@ -11,11 +11,11 @@
 
 /* (1) Here is our builtin function declaration. */
 static lisp_value *say_hello(lisp_runtime *rt, lisp_scope *scope,
-                             lisp_value *a, void *user)
+                             lisp_value *arglist, void *user)
 {
 	char *from = user;
 	lisp_string *s;
-	lisp_value *arglist = lisp_eval_list(rt, scope, a);
+	(void) scope; /* unused */
 
 	if (!lisp_get_args(rt, (lisp_list*)arglist, "S", &s)) {
 		return NULL;
@@ -37,9 +37,9 @@ int main(int argc, char **argv)
 	(void)argv;
 
 	/* (2) Here we register the builtin once */
-	lisp_scope_add_builtin(rt, scope, "hello", say_hello, "a computer");
+	lisp_scope_add_builtin(rt, scope, "hello", say_hello, "a computer", 1);
 	/* (3) Now register the same function with a different context object */
-	lisp_scope_add_builtin(rt, scope, "hello_from_stephen", say_hello, "Stephen");
+	lisp_scope_add_builtin(rt, scope, "hello_from_stephen", say_hello, "Stephen", 1);
 
 	for (;;) {
 		lisp_value *value, *result;

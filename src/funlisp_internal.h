@@ -136,6 +136,7 @@ struct lisp_builtin {
 	lisp_builtin_func call;
 	char *name;
 	void *user;
+	int evald;
 };
 
 struct lisp_lambda {

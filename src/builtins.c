@@ -605,31 +605,31 @@ static lisp_value *lisp_builtin_quasiquote(lisp_runtime *rt, lisp_scope *scope,
 
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
-	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval, NULL);
-	lisp_scope_add_builtin(rt, scope, "car", lisp_builtin_car, NULL);
-	lisp_scope_add_builtin(rt, scope, "cdr", lisp_builtin_cdr, NULL);
-	lisp_scope_add_builtin(rt, scope, "quote", lisp_builtin_quote, NULL);
-	lisp_scope_add_builtin(rt, scope, "cons", lisp_builtin_cons, NULL);
-	lisp_scope_add_builtin(rt, scope, "lambda", lisp_builtin_lambda, NULL);
-	lisp_scope_add_builtin(rt, scope, "macro", lisp_builtin_macro, NULL);
-	lisp_scope_add_builtin(rt, scope, "define", lisp_builtin_define, NULL);
-	lisp_scope_add_builtin(rt, scope, "+", lisp_builtin_plus, NULL);
-	lisp_scope_add_builtin(rt, scope, "-", lisp_builtin_minus, NULL);
-	lisp_scope_add_builtin(rt, scope, "*", lisp_builtin_multiply, NULL);
-	lisp_scope_add_builtin(rt, scope, "/", lisp_builtin_divide, NULL);
-	lisp_scope_add_builtin(rt, scope, "==", lisp_builtin_eq, NULL);
-	lisp_scope_add_builtin(rt, scope, "=", lisp_builtin_eq, NULL);
-	lisp_scope_add_builtin(rt, scope, ">", lisp_builtin_gt, NULL);
-	lisp_scope_add_builtin(rt, scope, ">=", lisp_builtin_ge, NULL);
-	lisp_scope_add_builtin(rt, scope, "<", lisp_builtin_lt, NULL);
-	lisp_scope_add_builtin(rt, scope, "<=", lisp_builtin_le, NULL);
-	lisp_scope_add_builtin(rt, scope, "if", lisp_builtin_if, NULL);
-	lisp_scope_add_builtin(rt, scope, "null?", lisp_builtin_null_p, NULL);
-	lisp_scope_add_builtin(rt, scope, "map", lisp_builtin_map, NULL);
-	lisp_scope_add_builtin(rt, scope, "reduce", lisp_builtin_reduce, NULL);
-	lisp_scope_add_builtin(rt, scope, "print", lisp_builtin_print, NULL);
-	lisp_scope_add_builtin(rt, scope, "dump-stack", lisp_builtin_dump_stack, NULL);
-	lisp_scope_add_builtin(rt, scope, "progn", lisp_builtin_progn, NULL);
-	lisp_scope_add_builtin(rt, scope, "unquote", lisp_builtin_unquote, NULL);
-	lisp_scope_add_builtin(rt, scope, "quasiquote", lisp_builtin_quasiquote, NULL);
+	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "car", lisp_builtin_car, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "cdr", lisp_builtin_cdr, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "quote", lisp_builtin_quote, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "cons", lisp_builtin_cons, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "lambda", lisp_builtin_lambda, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "macro", lisp_builtin_macro, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "define", lisp_builtin_define, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "+", lisp_builtin_plus, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "-", lisp_builtin_minus, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "*", lisp_builtin_multiply, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "/", lisp_builtin_divide, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "==", lisp_builtin_eq, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "=", lisp_builtin_eq, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, ">", lisp_builtin_gt, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, ">=", lisp_builtin_ge, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "<", lisp_builtin_lt, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "<=", lisp_builtin_le, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "if", lisp_builtin_if, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "null?", lisp_builtin_null_p, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "map", lisp_builtin_map, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "reduce", lisp_builtin_reduce, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "print", lisp_builtin_print, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "dump-stack", lisp_builtin_dump_stack, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "progn", lisp_builtin_progn, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "unquote", lisp_builtin_unquote, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "quasiquote", lisp_builtin_quasiquote, NULL, 0);
 }

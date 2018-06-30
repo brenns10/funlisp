@@ -517,10 +517,12 @@ typedef lisp_value * (*lisp_builtin_func)(lisp_runtime*, lisp_scope*, lisp_value
  * @param name name of the builtin. the interpreter will never free the name!
  * @param call function pointer of the builtin
  * @param user a user context pointer which will be given to the builtin
+ * @param evald non-zero if arguments should be evaluated before being given to
+ * this builtin. Zero if arguments should be given as-is.
  * @return new builtin object
  */
 lisp_builtin *lisp_builtin_new(lisp_runtime *rt, char *name,
-                               lisp_builtin_func call, void *user);
+                               lisp_builtin_func call, void *user, int evald);
 
 /**
  * Shortcut to declare a builtin function. Simply takes a function pointer and a
@@ -531,9 +533,11 @@ lisp_builtin *lisp_builtin_new(lisp_runtime *rt, char *name,
  * @param name name of builtin
  * @param call function pointer defining the builtin
  * @param user a user context pointer which will be given to the builtin
+ * @param evald non-zero if arguments should be evaluated before being given to
+ * this builtin. Zero if arguments should be given as-is.
  */
 void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
-                            lisp_builtin_func call, void *user);
+                            lisp_builtin_func call, void *user, int evald);
 
 /**
  * Given a list of arguments, evaluate each of them within a scope and return a
