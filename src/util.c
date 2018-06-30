@@ -16,6 +16,8 @@
 #include "funlisp_internal.h"
 #include "hashtable.h"
 
+const char * const lisp_version = FUNLISP_VERSION;
+
 void lisp_scope_bind(lisp_scope *scope, lisp_symbol *symbol, lisp_value *value)
 {
 	ht_insert_ptr(&scope->scope, symbol, value);

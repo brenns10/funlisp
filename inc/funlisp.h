@@ -832,6 +832,8 @@ enum lisp_errno lisp_get_errno(lisp_runtime *rt);
  */
 void lisp_clear_error(lisp_runtime *rt);
 
+extern const char * const lisp_version;
+
 /**
  * @}
  */

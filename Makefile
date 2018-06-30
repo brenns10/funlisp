@@ -14,7 +14,7 @@ VERSION=0.1.0
 all: bin/libfunlisp.a FORCE
 
 .c.o:
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -DFUNLISP_VERSION=\"$(VERSION)\" -c $< -o $@
 
 bin/libfunlisp.a: $(OBJS)
 	ar rcs $@ $^
@@ -30,6 +30,9 @@ bin/runfile:  tools/runfile.o bin/libfunlisp.a
 
 bin/call_lisp: tools/call_lisp.o bin/libfunlisp.a
 	$(CC) $^ -o $@
+
+bin/funlisp: tools/funlisp.o bin/libfunlisp.a
+	$(CC) -ledit $^ -o $@
 
 clean: FORCE
 	rm -rf bin/* src/*.o tools/*.o
