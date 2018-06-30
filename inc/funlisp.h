@@ -660,18 +660,6 @@ lisp_value *lisp_parse_progn(lisp_runtime *rt, char *input);
 lisp_value *lisp_parse_progn_f(lisp_runtime *rt, FILE *file);
 
 /**
- * Parse every expressioned contained in @a input, where input is a file.
- * Behaves the same as lisp_parse_progn(), with the additional caveat that the
- * entire file is loaded into memory at once. Any error reading from the file
- * will be passed down (as a NULL return value).
- * @param rt runtime
- * @param input string to parse
- * @return the code, fully parsed, within a progn block
- * @retval NULL when an error occurs (see lisp_print_error())
- */
-lisp_value *lisp_parse_progn(lisp_runtime *rt, char *input);
-
-/**
  * Parse a file and evaluate its contents. This is roughly equivalent to:
  * @code
  * lisp_value *progn = lisp_parse_progn_f(rt, scope, input)
