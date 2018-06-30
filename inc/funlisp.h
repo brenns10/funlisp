@@ -750,6 +750,7 @@ enum lisp_errno {
 	LE_NOCALL,   /* not callable */
 	LE_NOEVAL,   /* not evaluate-able */
 	LE_NOTFOUND, /* not found */
+	LE_EXIT,     /* exit the interpreter */
 
 	LE_UNUSED__  /* don't use this, it's just for the trailing comma */
 };
@@ -817,6 +818,13 @@ void lisp_print_error(lisp_runtime *rt, FILE *file);
  * @return error string
  */
 char *lisp_get_error(lisp_runtime *rt);
+
+/**
+ * Returns the error number of the current error registered with the runtime.
+ * @param rt runtime
+ * @return error number
+ */
+enum lisp_errno lisp_get_errno(lisp_runtime *rt);
 
 /**
  * Clears the error in the runtime.

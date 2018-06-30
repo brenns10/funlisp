@@ -385,6 +385,11 @@ char *lisp_get_error(lisp_runtime *rt)
 	return rt->error;
 }
 
+enum lisp_errno lisp_get_errno(lisp_runtime *rt)
+{
+	return rt->errno;
+}
+
 void lisp_clear_error(lisp_runtime *rt)
 {
 	rt->error = NULL;
