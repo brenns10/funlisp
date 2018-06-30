@@ -81,14 +81,8 @@ static lisp_value *repl_parse_single_input(lisp_runtime *rt)
 	}
 }
 
-/**
- * Run a REPL :)
- */
-int repl_run(void)
+void repl_run_with_rt(lisp_runtime *rt, lisp_scope *scope)
 {
-	lisp_runtime *rt = lisp_runtime_new();
-	lisp_scope *scope = lisp_new_default_scope(rt);
-
 	for (;;) {
 		lisp_value *parsed_value, *result;
 
@@ -119,7 +113,16 @@ int repl_run(void)
 		lisp_mark(rt, (lisp_value*)scope);
 		lisp_sweep(rt);
 	}
+}
 
+/**
+ * Run a REPL :)
+ */
+int repl_run(void)
+{
+	lisp_runtime *rt = lisp_runtime_new();
+	lisp_scope *scope = lisp_new_default_scope(rt);
+	repl_run_with_rt(rt, scope);
 	lisp_runtime_free(rt); /* implicitly sweeps everything */
 	return 0;
 }
@@ -127,7 +130,7 @@ int repl_run(void)
 /**
  * Run a file with some arguments.
  */
-int file_run(char *name, int argc, char **argv)
+int file_run(char *name, int argc, char **argv, int repl)
 {
 	FILE *file;
 	lisp_runtime *rt;
@@ -150,6 +153,10 @@ int file_run(char *name, int argc, char **argv)
 		return -1;
 	}
 
+	if (repl) {
+		repl_run_with_rt(rt, scope);
+		return 0;
+	}
 	result = lisp_run_main_if_exists(rt, scope, argc, argv);
 	if (!result) {
 		lisp_print_error(rt, stderr);
@@ -164,13 +171,13 @@ int file_run(char *name, int argc, char **argv)
 int help(void)
 {
 	puts(
-		"Usage: funlisp [options...] [file]  run specified file\n"
+		"Usage: funlisp [options...] [file]  load file and run main\n"
 		"   or: funlisp [options...]         run a REPL\n"
 		"\n"
 		"Options:\n"
 		" -h   Show this help message and exit\n"
 		" -v   Show the funlisp version and exit\n"
-		" -x   When file is specified, load it and run REPL"
+		" -x   When file is specified, load it and run REPL rather than main"
 	);
 	return 0;
 }
@@ -184,8 +191,12 @@ int version(void)
 int main(int argc, char **argv)
 {
 	int opt;
-	while ((opt = getopt(argc, argv, "hv")) != -1) {
+	int file_repl = 0;
+	while ((opt = getopt(argc, argv, "hvx")) != -1) {
 		switch (opt) {
+		case 'x':
+			file_repl = 1;
+			break;
 		case 'v':
 			return version();
 			break;
@@ -198,6 +209,6 @@ int main(int argc, char **argv)
 	if (optind >= argc) {
 		return repl_run();
 	} else {
-		return file_run(argv[optind], argc - optind, argv + optind);
+		return file_run(argv[optind], argc - optind, argv + optind, file_repl);
 	}
 }
