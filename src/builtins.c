@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "funlisp_internal.h"
 
@@ -522,6 +523,57 @@ static lisp_value *lisp_builtin_progn(lisp_runtime *rt, lisp_scope *scope,
 	return lisp_progn(rt, scope, (lisp_list *) a);
 }
 
+static lisp_value *lisp_builtin_unquote(lisp_runtime *rt, lisp_scope *scope,
+                                        lisp_value *a, void *user)
+{
+	lisp_value *firstarg;
+	lisp_list *arglist = (lisp_list*) a;
+	(void) user; /* unused */
+	(void) scope;
+	if (!lisp_get_args(rt, arglist, "*", &firstarg)) {
+		return NULL;
+	}
+	return lisp_eval(rt, scope, firstarg);
+}
+
+static lisp_value *lisp_quasiquote(lisp_runtime *rt, lisp_scope *scope,
+                                   lisp_value *v)
+{
+	lisp_list *vl;
+	lisp_symbol *vlls;
+
+	if (v->type != type_list) {
+		return v;
+	}
+
+	vl = (lisp_list *) v;
+	if (vl->left->type == type_symbol) {
+		vlls = (lisp_symbol *) vl->left;
+		if (strcmp(vlls->sym, "unquote") == 0) {
+			return lisp_eval(rt, scope, v);
+		}
+	}
+	lisp_for_each(vl) {
+		vl->left = lisp_quasiquote(rt, scope, vl->left);
+		if (!vl->left)
+			return NULL;
+	}
+	return v;
+}
+
+static lisp_value *lisp_builtin_quasiquote(lisp_runtime *rt, lisp_scope *scope,
+                                           lisp_value *a, void *user)
+{
+	lisp_value *firstarg;
+	lisp_list *arglist = (lisp_list*) a;
+	(void) user; /* unused */
+	(void) scope;
+	if (!lisp_get_args(rt, arglist, "*", &firstarg)) {
+		return NULL;
+	}
+	return lisp_quasiquote(rt, scope, firstarg);
+}
+
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
 	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval, NULL);
@@ -548,4 +600,6 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "print", lisp_builtin_print, NULL);
 	lisp_scope_add_builtin(rt, scope, "dump-stack", lisp_builtin_dump_stack, NULL);
 	lisp_scope_add_builtin(rt, scope, "progn", lisp_builtin_progn, NULL);
+	lisp_scope_add_builtin(rt, scope, "unquote", lisp_builtin_unquote, NULL);
+	lisp_scope_add_builtin(rt, scope, "quasiquote", lisp_builtin_quasiquote, NULL);
 }
