@@ -78,7 +78,7 @@ lisp_value *lisp_progn(lisp_runtime *rt, lisp_scope *scope, lisp_list *l)
 	lisp_value *v;
 
 	if (lisp_nil_p((lisp_value*)l))
-		return lisp_error(rt, LE_2FEW, "progn: need at least one arg");
+		return lisp_nil_new(rt);
 
 	while (1) {
 		v = lisp_eval(rt, scope, l->left);

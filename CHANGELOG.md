@@ -25,6 +25,7 @@ will be made on patch versions.
   level, with error codes and messages. Codes are useful for programs to
   understand the type of error which occurred, while messages are useful for
   users looking at errors.
+- Progns may now be empty
 
 ## [0.1.0] (BETA) - 2018-06-13
 
