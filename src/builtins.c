@@ -473,15 +473,13 @@ static lisp_value *lisp_builtin_print(lisp_runtime *rt, lisp_scope *scope,
                                       lisp_list *args, void *user)
 {
 	/* args are evaluated */
-	lisp_value *v;
 	(void) user; /* unused */
 	(void) scope;
 
-	if (!lisp_get_args(rt, args, "*", &v)) {
-		return NULL;
+	lisp_for_each(args) {
+		lisp_print(stdout, args->left);
 	}
 
-	lisp_print(stdout, v);
 	printf("\n");
 	return lisp_nil_new(rt);
 }
