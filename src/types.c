@@ -466,8 +466,13 @@ lisp_type *type_lambda = &type_lambda_obj;
 
 static void lambda_print(FILE *f, lisp_value *v)
 {
-	(void)v;
-	fprintf(f, "<lambda function>");
+	lisp_lambda *l = (lisp_lambda *) v;
+	char *name = l->first_binding ? l->first_binding->sym : "(anonymous)";
+	if (l->lambda_type == TP_LAMBDA) {
+		fprintf(f, "<lambda %s>", name);
+	} else {
+		fprintf(f, "<macro %s>", name);
+	}
 }
 
 static lisp_value *lambda_new()
@@ -475,6 +480,9 @@ static lisp_value *lambda_new()
 	lisp_lambda *lambda = malloc(sizeof(lisp_lambda));
 	lambda->args = NULL;
 	lambda->code = NULL;
+	lambda->closure = NULL;
+	lambda->first_binding = NULL;
+	lambda->lambda_type = TP_LAMBDA;
 	return (lisp_value*) lambda;
 }
 
@@ -529,6 +537,8 @@ static void *lambda_expand_next(struct iterator *it)
 		return l->code;
 	case 3:
 		return l->closure;
+	case 4:
+		return l->first_binding;
 	default:
 		return NULL;
 	}
@@ -536,9 +546,10 @@ static void *lambda_expand_next(struct iterator *it)
 
 static struct iterator lambda_expand(lisp_value *v)
 {
+	lisp_lambda *l = (lisp_lambda *) v;
 	struct iterator it = {0};
 	it.ds = v;
-	it.state_int = 3;
+	it.state_int = l->first_binding ? 4 : 3;
 	it.index = 0;
 	it.next = lambda_expand_next;
 	it.has_next = has_next_index_lt_state;

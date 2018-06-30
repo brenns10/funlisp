@@ -143,6 +143,7 @@ struct lisp_lambda {
 	lisp_list *args;
 	lisp_list *code;
 	lisp_scope *closure;
+	lisp_symbol *first_binding;
 	int lambda_type;
 };
 

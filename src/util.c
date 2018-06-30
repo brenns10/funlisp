@@ -20,7 +20,16 @@ const char * const lisp_version = FUNLISP_VERSION;
 
 void lisp_scope_bind(lisp_scope *scope, lisp_symbol *symbol, lisp_value *value)
 {
+	lisp_lambda *l;
 	ht_insert_ptr(&scope->scope, symbol, value);
+
+	/* for nicer debugging, record the first name binding for lambdas */
+	if (value->type == type_lambda) {
+		l = (lisp_lambda *) value;
+		if (!l->first_binding) {
+			l->first_binding = symbol;
+		}
+	}
 }
 
 lisp_value *lisp_scope_lookup(lisp_runtime *rt, lisp_scope *scope,
