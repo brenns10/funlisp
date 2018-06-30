@@ -17,6 +17,8 @@ will be made on patch versions.
 - Added `funlisp` binary, which aims to be a complete, user-friendly repl and
   script runner.
 - Added `lisp_version`, a string containing the funlisp version.
+- Added `unquote` and `quasiquote`, and their special syntax forms (comma and
+  backtick respectively)
 ### Changed
 - Parsing API is now flexible enough for public users. Removed `lisp_parse()`
   and added `lisp_parse_value()`, as well as `lisp_parse_progn()` and
