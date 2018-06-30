@@ -19,15 +19,19 @@ will be made on patch versions.
 - Added `lisp_version`, a string containing the funlisp version.
 - Added `unquote` and `quasiquote`, and their special syntax forms (comma and
   backtick respectively)
+- Added support for a `macro` builtin, which is identical to `lambda`, but
+  instead returns code which should be evaluated.
 ### Changed
 - Parsing API is now flexible enough for public users. Removed `lisp_parse()`
   and added `lisp_parse_value()`, as well as `lisp_parse_progn()` and
-  `lisp_parse_progn_f()`.
+  `lisp_parse_progn_f()`. **This change is backward incompatible.**
 - Error handling has received more love. Errors are now set at the interpreter
   level, with error codes and messages. Codes are useful for programs to
   understand the type of error which occurred, while messages are useful for
-  users looking at errors.
+  users looking at errors. **This change is backward incompatible.**
 - Progns may now be empty
+- In stack traces, lambdas and macros now show the first name they were bound
+  to, so that you can more easily read them.
 
 ## [0.1.0] (BETA) - 2018-06-13
 
