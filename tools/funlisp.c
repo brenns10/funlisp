@@ -148,13 +148,16 @@ int file_run(char *name, int argc, char **argv, int repl)
 	scope = lisp_new_default_scope(rt);
 
 	if (!lisp_load_file(rt, scope, file)) {
+		fclose(file);
 		lisp_print_error(rt, stderr);
 		lisp_runtime_free(rt);
 		return -1;
 	}
+	fclose(file);
 
 	if (repl) {
 		repl_run_with_rt(rt, scope);
+		lisp_runtime_free(rt);
 		return 0;
 	}
 	result = lisp_run_main_if_exists(rt, scope, argc, argv);
