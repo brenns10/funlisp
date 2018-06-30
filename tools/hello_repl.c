@@ -11,13 +11,13 @@
 
 /* (1) Here is our builtin function declaration. */
 static lisp_value *say_hello(lisp_runtime *rt, lisp_scope *scope,
-                             lisp_value *arglist, void *user)
+                             lisp_list *arglist, void *user)
 {
 	char *from = user;
 	lisp_string *s;
 	(void) scope; /* unused */
 
-	if (!lisp_get_args(rt, (lisp_list*)arglist, "S", &s)) {
+	if (!lisp_get_args(rt, arglist, "S", &s)) {
 		return NULL;
 	}
 

@@ -441,10 +441,17 @@ static lisp_value *builtin_call(lisp_runtime *rt, lisp_scope *scope,
 {
 	lisp_builtin *builtin = (lisp_builtin*) c;
 	if (builtin->evald) {
-		arguments = lisp_eval_list(rt, scope, arguments);
+		/* this is ugly with all the casting but TODO fix it soon */
+		arguments = (lisp_value*)lisp_eval_list(rt, scope, (lisp_list*)arguments);
 		lisp_error_check(arguments);
+
 	}
-	return builtin->call(rt, scope, arguments, builtin->user);
+	if (arguments->type != type_list) {
+		return lisp_error(rt, LE_SYNTAX,
+			"unrecognized syntax form, builtin must be "
+			"called with list");
+	}
+	return builtin->call(rt, scope, (lisp_list *) arguments, builtin->user);
 }
 
 /*
@@ -500,7 +507,7 @@ static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
 	lisp_value *result;
 
 	lambda = (lisp_lambda*) c;
-	argvalues = (lisp_list*)lisp_eval_list(rt, scope, arguments);
+	argvalues = lisp_eval_list(rt, scope, (lisp_list*)arguments);
 	lisp_error_check(argvalues);
 	inner = (lisp_scope*)lisp_new(rt, type_scope);
 	inner->up = lambda->closure;
@@ -585,6 +592,7 @@ lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope,
                       lisp_value *callable, lisp_value *args)
 {
 	lisp_value *rv;
+	assert(args->type == type_list); /* soon this will be in the signature */
 	/* create new stack frame */
 	rt->stack = lisp_list_new(rt, callable, (lisp_value *) rt->stack);
 	rt->stack_depth++;

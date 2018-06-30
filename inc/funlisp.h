@@ -502,11 +502,12 @@ int lisp_integer_get(lisp_integer *integer);
  *    runtime's user context object (see lisp_runtime_get_ctx()).
  * 2. The ::lisp_scope this function is being called executed within. Most
  *    builtin functions will want to evaluate this with lisp_eval_list().
- * 3. The arguments to this function, as a ::lisp_list. These have not yet been
- *    evaluated.
+ * 3. The arguments to this function, as a ::lisp_list. These may or may not have
+ *    been evaluated, depending on whether ``evald`` was set when creating the
+ *    builtin object.
  * 4. The user context associated with this builtin.
  */
-typedef lisp_value * (*lisp_builtin_func)(lisp_runtime*, lisp_scope*, lisp_value*, void*);
+typedef lisp_value * (*lisp_builtin_func)(lisp_runtime*, lisp_scope*, lisp_list*, void*);
 
 /**
  * Create a new ::lisp_builtin from a function pointer, with a given name.
@@ -549,7 +550,7 @@ void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
  * @return list of evaluated function arguments
  * @retval NULL if an error occured during evaluation
  */
-lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *list);
+lisp_list *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_list *list);
 
 /**
  * Given a list of ::lisp_value's, evaluate each of them within a scope,

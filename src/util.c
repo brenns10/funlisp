@@ -64,22 +64,20 @@ void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
 	lisp_scope_bind(scope, symbol, (lisp_value*)builtin);
 }
 
-lisp_value *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_value *l)
+lisp_list *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_list *list)
 {
 	lisp_value *left, *right;
-	lisp_list *list;
-	if (lisp_nil_p(l)) {
-		return l;
+	if (lisp_nil_p((lisp_value*)list)) {
+		return list;
 	}
-	list = (lisp_list*) l;
 
 	left = lisp_eval(rt, scope, list->left);
 	lisp_error_check(left);
 
-	right = lisp_eval_list(rt, scope, list->right);
+	right = (lisp_value*)lisp_eval_list(rt, scope, (lisp_list*)list->right);
 	lisp_error_check(right);
 
-	return (lisp_value *) lisp_list_new(rt, left, right);
+	return lisp_list_new(rt, left, right);
 }
 
 lisp_value *lisp_progn(lisp_runtime *rt, lisp_scope *scope, lisp_list *l)
