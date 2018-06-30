@@ -143,7 +143,11 @@ struct lisp_lambda {
 	lisp_list *args;
 	lisp_list *code;
 	lisp_scope *closure;
+	int lambda_type;
 };
+
+#define TP_LAMBDA 0
+#define TP_MACRO  1
 
 /* Interpreter stuff */
 void lisp_init(lisp_runtime *rt);

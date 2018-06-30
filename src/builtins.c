@@ -105,6 +105,35 @@ static lisp_value *lisp_builtin_lambda(lisp_runtime *rt, lisp_scope *scope,
 	lambda->args = argnames;
 	lambda->code = code;
 	lambda->closure = scope;
+	lambda->lambda_type = TP_LAMBDA;
+	return (lisp_value*) lambda;
+}
+
+static lisp_value *lisp_builtin_macro(lisp_runtime *rt, lisp_scope *scope,
+                                       lisp_value *a, void *user)
+{
+	lisp_list *argnames, *code;
+	lisp_list *our_args = (lisp_list*)a, *it;
+	lisp_lambda *lambda;
+	(void) user; /* unused */
+	(void) scope;
+
+	if (!lisp_get_args(rt, our_args, "lR", &argnames, &code)) {
+		return NULL;
+	}
+
+	it = argnames;
+	lisp_for_each(it) {
+		if (it->left->type != type_symbol) {
+			return lisp_error(rt, LE_TYPE, "argument names must be symbols");
+		}
+	}
+
+	lambda = (lisp_lambda*)lisp_new(rt, type_lambda);
+	lambda->args = argnames;
+	lambda->code = code;
+	lambda->closure = scope;
+	lambda->lambda_type = TP_MACRO;
 	return (lisp_value*) lambda;
 }
 
@@ -582,6 +611,7 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "quote", lisp_builtin_quote, NULL);
 	lisp_scope_add_builtin(rt, scope, "cons", lisp_builtin_cons, NULL);
 	lisp_scope_add_builtin(rt, scope, "lambda", lisp_builtin_lambda, NULL);
+	lisp_scope_add_builtin(rt, scope, "macro", lisp_builtin_macro, NULL);
 	lisp_scope_add_builtin(rt, scope, "define", lisp_builtin_define, NULL);
 	lisp_scope_add_builtin(rt, scope, "+", lisp_builtin_plus, NULL);
 	lisp_scope_add_builtin(rt, scope, "-", lisp_builtin_minus, NULL);

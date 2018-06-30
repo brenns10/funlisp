@@ -484,6 +484,7 @@ static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
 	lisp_lambda *lambda;
 	lisp_list *argvalues, *it1, *it2;
 	lisp_scope *inner;
+	lisp_value *result;
 
 	lambda = (lisp_lambda*) c;
 	argvalues = (lisp_list*)lisp_eval_list(rt, scope, arguments);
@@ -506,7 +507,15 @@ static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
 		return lisp_error(rt, LE_2MANY, "too many arguments to lambda call");
 	}
 
-	return lisp_progn(rt, inner, lambda->code);
+	result = lisp_progn(rt, inner, lambda->code);
+	lisp_error_check(result);
+
+	if (lambda->lambda_type == TP_MACRO) {
+		/* for macros, we've now evaluated the macro to get code, now
+		 * evaluate the code */
+		result = lisp_eval(rt, scope, result);
+	}
+	return result;
 }
 
 static void *lambda_expand_next(struct iterator *it)
