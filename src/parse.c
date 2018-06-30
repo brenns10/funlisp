@@ -188,10 +188,24 @@ static result lisp_parse_symbol(lisp_runtime *rt, char *input, int index)
 
 static result lisp_parse_quote(lisp_runtime *rt, char *input, int index)
 {
+	char *qc;
 	result r = lisp_parse_value_internal(rt, input, index + 1);
 	if (r.error) return r;
 	else if (!r.result) return_result_err(NULL, r.index, 1);
-	r.result = lisp_quote(rt, r.result);
+	switch (input[index]) {
+	case '\'':
+		qc = "quote";
+		break;
+	case '`':
+		qc = "quasiquote";
+		break;
+	case ',':
+		qc = "unquote";
+		break;
+	default:
+		assert(0);
+	}
+	r.result = lisp_quote_with(rt, r.result, qc);
 	return r;
 }
 
@@ -199,25 +213,26 @@ static result lisp_parse_value_internal(lisp_runtime *rt, char *input, int index
 {
 	index = skip_space_and_comments(input, index);
 
-	if (input[index] == '"') {
+	switch (input[index]) {
+	case '"':
 		return lisp_parse_string(rt, input, index);
-	}
-	if (input[index] == '\0') {
+	case '\0':
 		return_result(NULL, index);
-	}
-	if (input[index] == ')') {
+	case ')':
 		return_result(lisp_nil_new(rt), index + 1);
-	}
-	if (input[index] == '(') {
+	case '(':
 		return lisp_parse_list_or_sexp(rt, input, index + 1);
-	}
-	if (input[index] == '\'') {
+	case '`':
+	case ',':
+	case '\'':
 		return lisp_parse_quote(rt, input, index);
+	default:
+		if (isdigit(input[index])) {
+			return lisp_parse_integer(rt, input, index);
+		} else {
+			return lisp_parse_symbol(rt, input, index);
+		}
 	}
-	if (isdigit(input[index])) {
-		return lisp_parse_integer(rt, input, index);
-	}
-	return lisp_parse_symbol(rt, input, index);
 }
 
 static void set_error_lineno(lisp_runtime *rt, char *input, int index)

@@ -153,4 +153,6 @@ void lisp_destroy(lisp_runtime *rt);
 void lisp_free(lisp_value *value);
 lisp_value *lisp_new(lisp_runtime *rt, lisp_type *typ);
 
+lisp_value *lisp_quote_with(lisp_runtime *rt, lisp_value *value, char *sym);
+
 #endif

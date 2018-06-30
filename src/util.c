@@ -101,18 +101,22 @@ int lisp_list_length(lisp_list *list)
 	return length;
 }
 
-lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value) {
+lisp_value *lisp_quote_with(lisp_runtime *rt, lisp_value *value, char *sym) {
 	lisp_list *s, *l;
 	lisp_symbol *q;
 
 	l = (lisp_list*)lisp_new(rt, type_list);
-	q = lisp_symbol_new(rt, "quote");
+	q = lisp_symbol_new(rt, sym);
 	l->left = (lisp_value*)q;
 	s = (lisp_list*) lisp_new(rt, type_list);
 	s->right = lisp_nil_new(rt);
 	l->right = (lisp_value*)s;
 	s->left = value;
 	return (lisp_value*)l;
+}
+
+lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value) {
+	return lisp_quote_with(rt, value, "quote");
 }
 
 static lisp_type *lisp_get_type(char c)
