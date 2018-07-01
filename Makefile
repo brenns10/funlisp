@@ -11,7 +11,8 @@ OBJS=src/builtins.o src/charbuf.o src/gc.o src/hashtable.o src/iter.o \
 # https://semver.org
 VERSION=0.1.0
 
-all: bin/libfunlisp.a FORCE
+all: bin/libfunlisp.a bin/funlisp bin/repl bin/hello_repl bin/runfile \
+ bin/call_lisp FORCE
 
 .c.o:
 	$(CC) $(CFLAGS) -DFUNLISP_VERSION=\"$(VERSION)\" -c $< -o $@
@@ -75,6 +76,9 @@ doc: FORCE
 	doxygen
 	sphinx-build -d doc/.doctrees -b html doc html
 	sphinx-build -d doc/.doctrees -b man doc man
+
+test: all FORCE
+	@python test.py scripts/tests
 
 clean_doc:
 	rm -rf doc/xml man html
