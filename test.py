@@ -55,13 +55,17 @@ def test_case(script, runner):
     if act_code == ERROR_EXITCODE:
         print('MEM ERROR')
         print('## STDOUT')
-        print(stdouT)
+        print(act_stdout)
         print('## STDERR')
-        print(stderr)
+        print(act_stderr)
         return False
     elif act_code != exp_code:
         print('FAIL (returned {}, expected {})'.format(
             act_code, exp_code))
+        print('## STDOUT')
+        print(act_stdout)
+        print('## STDERR')
+        print(act_stderr)
         return False
     elif act_stdout.strip() != exp_stdout.strip():
         print('FAIL (incorrect output)')
