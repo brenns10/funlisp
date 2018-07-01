@@ -270,7 +270,7 @@ lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
 	lisp_value *main_func = lisp_scope_lookup(
 		rt, scope, lisp_symbol_new(rt, "main"));
 
-	if (main_func->type == NULL) {
+	if (main_func == NULL) {
 		lisp_clear_error(rt);
 		return lisp_nil_new(rt);
 	}
