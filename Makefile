@@ -21,19 +21,19 @@ bin/libfunlisp.a: $(OBJS)
 	ar rcs $@ $^
 
 bin/repl: tools/repl.o bin/libfunlisp.a
-	$(CC) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@
 
 bin/hello_repl: tools/hello_repl.o bin/libfunlisp.a
-	$(CC) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@
 
 bin/runfile:  tools/runfile.o bin/libfunlisp.a
-	$(CC) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@
 
 bin/call_lisp: tools/call_lisp.o bin/libfunlisp.a
-	$(CC) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@
 
 bin/funlisp: tools/funlisp.o bin/libfunlisp.a
-	$(CC) -ledit $^ -o $@
+	$(CC) $(CFLAGS) -ledit $^ -o $@
 
 clean: FORCE
 	rm -rf bin/* src/*.o tools/*.o
@@ -79,6 +79,7 @@ doc: FORCE
 
 test: all FORCE
 	@python test.py scripts/tests
+	gcovr -r src --html --html-details -o cov.html
 
 clean_doc:
 	rm -rf doc/xml man html

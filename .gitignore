@@ -13,5 +13,9 @@ doc/.doctrees
 html
 man
 funlisp-*.tar.gz
+cov*.html
+*.gcda
+*.gcno
+coverage.info
 syntax: regexp
 (.*/)?\#[^/]*\#$

@@ -3,3 +3,5 @@
 CC=gcc
 CFLAGS_DEBUG=-g -DDEBUG
 CFLAGS=-std=c89 -Wall -Wextra -pedantic -fPIC -Iinc $(CFLAGS_DEBUG)
+
+CFLAGS += -fprofile-arcs -ftest-coverage -lgcov
