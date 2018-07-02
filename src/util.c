@@ -83,18 +83,25 @@ void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
 
 lisp_list *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_list *list)
 {
-	lisp_value *left, *right;
-	if (lisp_nil_p((lisp_value*)list)) {
+	lisp_list *new_head=NULL, *new_node;
+
+	if (lisp_nil_p((lisp_value*) list)) {
 		return list;
 	}
 
-	left = lisp_eval(rt, scope, list->left);
-	lisp_error_check(left);
-
-	right = (lisp_value*)lisp_eval_list(rt, scope, (lisp_list*)list->right);
-	lisp_error_check(right);
-
-	return lisp_list_new(rt, left, right);
+	lisp_for_each(list) {
+		if (!new_head) {
+			new_head = (lisp_list*) lisp_new(rt, type_list);
+			new_node = new_head;
+		} else {
+			new_node->right = lisp_new(rt, type_list);
+			new_node = (lisp_list*) new_node->right;
+		}
+		new_node->left = lisp_eval(rt, scope, list->left);
+		lisp_error_check(new_node->left);
+	}
+	new_node->right = lisp_nil_new(rt);
+	return new_head;
 }
 
 lisp_value *lisp_progn(lisp_runtime *rt, lisp_scope *scope, lisp_list *l)
