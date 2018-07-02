@@ -364,6 +364,11 @@ bool ht_contains_ptr(struct hashtable const *table, void *key)
 	return ht_contains(table, &key);
 }
 
+unsigned long ht_length(const struct hashtable *table)
+{
+	return table->length;
+}
+
 unsigned int ht_string_hash(void *data)
 {
 	char *theString = *(char**)data;

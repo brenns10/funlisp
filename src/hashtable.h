@@ -106,6 +106,13 @@ void *ht_get_ptr(struct hashtable const *table, void *key);
 bool ht_contains(struct hashtable const *table, void *key);
 bool ht_contains_ptr(struct hashtable const *table, void *key);
 /**
+ * Return the number of key, value pairs stored in the hash table.
+ * @param table A pointer to the hash table.
+ * @returns The number of key, value pairs stored in the hash table.
+ */
+unsigned long ht_length(const struct hashtable *table);
+
+/**
  * @brief Return the hash of the data, interpreting it as a string.
  * @param data The string to hash, assuming that the value contained is a char*.
  * @returns The hash value of the string.
