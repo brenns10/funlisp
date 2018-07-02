@@ -390,20 +390,20 @@ static lisp_list *advance_lists(lisp_runtime *rt, lisp_list *list_of_lists)
 }
 
 static lisp_value *lisp_builtin_map(lisp_runtime *rt, lisp_scope *scope,
-                                    lisp_list *args, void *user)
+                                    lisp_list *map_args, void *user)
 {
 	/* args are evaluated */
 	lisp_value *f;
-	lisp_list *ret = NULL, *rv;
+	lisp_list *ret = NULL, *rv, *args;
 	(void) user; /* unused */
 
 	/* Get the function from the first argument in the list. */
-	f = args->left;
-	if (args->right->type != type_list) {
+	f = map_args->left;
+	if (map_args->right->type != type_list) {
 		return lisp_error(rt, LE_2FEW, "need at least two arguments");
 	}
-	args = (lisp_list*) args->right;
-	while ((args = get_quoted_left_items(rt, args)) != NULL) {
+	map_args = (lisp_list*) map_args->right;
+	while ((args = get_quoted_left_items(rt, map_args)) != NULL) {
 		if (ret == NULL) {
 			ret = (lisp_list*) lisp_new(rt, type_list);
 			rv = ret;
@@ -413,7 +413,7 @@ static lisp_value *lisp_builtin_map(lisp_runtime *rt, lisp_scope *scope,
 		}
 		ret->left = lisp_call(rt, scope, f, (lisp_value*)args);
 		lisp_error_check(ret->left);
-		args = advance_lists(rt, args);
+		map_args = advance_lists(rt, map_args);
 	}
 	ret->right = lisp_nil_new(rt);
 	return (lisp_value*) rv;
