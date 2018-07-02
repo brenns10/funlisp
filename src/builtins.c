@@ -586,6 +586,23 @@ static lisp_value *lisp_builtin_equal(lisp_runtime *rt, lisp_scope *scope,
 	return (lisp_value*) lisp_integer_new(rt, lisp_compare(lhs, rhs));
 }
 
+static lisp_value *lisp_builtin_assert(lisp_runtime *rt, lisp_scope *scope,
+                                       lisp_list *arglist, void *user)
+{
+	/* args are evaluated */
+	lisp_integer *expr;
+	(void) user;
+	(void) scope;
+
+	if (!lisp_get_args(rt, arglist, "d", &expr))
+		return NULL;
+
+	if (expr->x == 0)
+		return lisp_error(rt, LE_ASSERT, "assertion error");
+	else
+		return (lisp_value*) expr;
+}
+
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
 	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval, NULL, 1);
@@ -617,4 +634,5 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "quasiquote", lisp_builtin_quasiquote, NULL, 0);
 	lisp_scope_add_builtin(rt, scope, "eq?", lisp_builtin_eq, NULL, 1);
 	lisp_scope_add_builtin(rt, scope, "equal?", lisp_builtin_equal, NULL, 1);
+	lisp_scope_add_builtin(rt, scope, "assert", lisp_builtin_assert, NULL, 1);
 }

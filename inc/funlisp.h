@@ -767,6 +767,7 @@ enum lisp_errno {
 	LE_NOEVAL,   /* not evaluate-able */
 	LE_NOTFOUND, /* not found */
 	LE_EXIT,     /* exit the interpreter */
+	LE_ASSERT,   /* assertion error */
 
 	LE_UNUSED__  /* don't use this, it's just for the trailing comma */
 };
