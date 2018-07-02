@@ -28,7 +28,7 @@
 	char mark                       \
 
 #define lisp_for_each(list) \
-	for (; !lisp_nil_p((lisp_value *) list); list = (lisp_list*) list->right)
+	for (; list->type == type_list && !lisp_nil_p((lisp_value *) list); list = (lisp_list*) list->right)
 
 
 /*

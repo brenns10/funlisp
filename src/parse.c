@@ -148,6 +148,15 @@ static result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 			else if (!r.result) return_result_err(NULL, r.index, 1);
 			index = r.index;
 			l->right = r.result;
+			/* this MUST be the end of the list / or sexp. make sure
+			 * it is (returning error if not), and consume the
+			 * closing paren */
+			index = skip_space_and_comments(input, index);
+			if (input[index] != ')') {
+				rt->error = "bad s-expression form";
+				return_result_err(NULL, index, LE_SYNTAX);
+			}
+			index++;
 			return_result(rv, index);
 		} else if (input[index] == ')') {
 			index++;

@@ -14,6 +14,9 @@
 (assert-error 'LE_2MANY
               (map == '(4 6) '(2 2) '(? ?)))
 
+(assert-error 'LE_VALUE
+              (map == '(4 6) '(2 . 2)))
+
 ; OUTPUT(0)
 ; just
 ; a

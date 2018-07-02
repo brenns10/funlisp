@@ -389,6 +389,25 @@ static lisp_list *advance_lists(lisp_runtime *rt, lisp_list *list_of_lists)
 	return rv;
 }
 
+static int lisp_is_bad_list(lisp_list *l)
+{
+	if (l->type != type_list) return 1;
+	lisp_for_each(l) {} /* go to first item which is not an empty list */
+	return l->type != type_list;
+}
+
+static int lisp_is_bad_list_of_lists(lisp_list *l)
+{
+	if (l->type != type_list) return 1;
+	lisp_for_each(l) {
+		if (lisp_is_bad_list((lisp_list*)l->left)) {
+			return 1;
+		}
+	}
+	return l->type != type_list;
+}
+
+
 static lisp_value *lisp_builtin_map(lisp_runtime *rt, lisp_scope *scope,
                                     lisp_list *map_args, void *user)
 {
@@ -403,6 +422,12 @@ static lisp_value *lisp_builtin_map(lisp_runtime *rt, lisp_scope *scope,
 		return lisp_error(rt, LE_2FEW, "need at least two arguments");
 	}
 	map_args = (lisp_list*) map_args->right;
+
+	/* Make sure the arguments are well-behaved lists */
+	if (lisp_is_bad_list_of_lists(map_args)) {
+		return lisp_error(rt, LE_VALUE,
+			"arguments after callable must be lists");
+	}
 	while ((args = get_quoted_left_items(rt, map_args)) != NULL) {
 		if (ret == NULL) {
 			ret = (lisp_list*) lisp_new(rt, type_list);
