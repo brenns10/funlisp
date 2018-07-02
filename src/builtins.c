@@ -446,7 +446,7 @@ static lisp_value *lisp_builtin_reduce(lisp_runtime *rt, lisp_scope *scope,
 			return NULL;
 		}
 		if (lisp_list_length(list) < 2) {
-			return lisp_error(rt, LE_2FEW, "reduce: list must have at least 2 entries");
+			return lisp_error(rt, LE_VALUE, "reduce: list must have at least 2 entries");
 		}
 		initializer = list->left;
 		list = (lisp_list*)list->right;
@@ -455,8 +455,10 @@ static lisp_value *lisp_builtin_reduce(lisp_runtime *rt, lisp_scope *scope,
 			return NULL;
 		}
 		if (lisp_list_length(list) < 1) {
-			return lisp_error(rt, LE_2FEW, "reduce: list must have at least 1 entry");
+			return lisp_error(rt, LE_VALUE, "reduce: list must have at least 1 entry");
 		}
+	} else if (length <= 2) {
+		return lisp_error(rt, LE_2FEW, "reduce: 2 or 3 arguments required");
 	} else {
 		return lisp_error(rt, LE_2MANY, "reduce: 2 or 3 arguments required");
 	}
