@@ -107,6 +107,7 @@ struct lisp_type {
 	struct iterator (*expand)(lisp_value*);
 	lisp_value * (*eval)(lisp_runtime *rt, lisp_scope *scope, lisp_value *value);
 	lisp_value * (*call)(lisp_runtime *rt, lisp_scope *scope, lisp_value *callable, lisp_value *arg);
+	int (*compare)(lisp_value *self, lisp_value *other);
 };
 
 struct lisp_symbol {

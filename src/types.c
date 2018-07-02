@@ -56,6 +56,7 @@ static bool has_next_index_lt_state(struct iterator *iter)
 
 static void type_print(FILE *f, lisp_value *v);
 static lisp_value *type_new(void);
+static int type_compare(lisp_value *self, lisp_value *other);
 
 static lisp_type type_type_obj = {
 	TYPE_HEADER,
@@ -66,6 +67,7 @@ static lisp_type type_type_obj = {
 	/* expand */ iterator_empty,
 	/* eval */ eval_error,
 	/* call */ call_error,
+	/* compare */ type_compare,
 };
 lisp_type *type_type = &type_type_obj;
 
@@ -81,6 +83,15 @@ static lisp_value *type_new(void)
 	return (lisp_value*)type;
 }
 
+static int type_compare(lisp_value *self, lisp_value *other)
+{
+	if (self->type != other->type || self->type != type_type)
+		return 0;
+	/* can compare by pointer since there should only ever be one of each
+	 * type */
+	return self == other;
+}
+
 /*
  * scope
  */
@@ -89,6 +100,7 @@ static void scope_print(FILE *f, lisp_value*v);
 static lisp_value *scope_new(void);
 static void scope_free(void *v);
 static struct iterator scope_expand(lisp_value *);
+static int scope_compare(lisp_value *self, lisp_value *other);
 
 static lisp_type type_scope_obj = {
 	TYPE_HEADER,
@@ -99,6 +111,7 @@ static lisp_type type_scope_obj = {
 	/* expand */ scope_expand,
 	/* eval */ eval_error,
 	/* call */ call_error,
+	/* compare */ scope_compare,
 };
 lisp_type *type_scope = &type_scope_obj;
 
@@ -163,6 +176,59 @@ static struct iterator scope_expand(lisp_value *v)
 	}
 }
 
+static int scope_compare(lisp_value *self, lisp_value *other)
+{
+	lisp_scope *lhs, *rhs;
+	lisp_symbol *key;
+	lisp_value *value, *rhs_value;
+	struct iterator it;
+
+	/* easy quick checks - same type? same pointer value? */
+	if (self == other)
+		return 1; /* short circuit because comparison is hard */
+	if (self->type != other->type || self->type != type_scope)
+		return 0;
+
+	lhs = (lisp_scope*) self;
+	rhs = (lisp_scope*) other;
+
+	/* now actual equality test - first check parent scope equality */
+	if (lhs->up && rhs->up) {
+		/* both parents non-NULL */
+		if (!scope_compare((lisp_value*)lhs->up,
+		                   (lisp_value*)rhs->up))
+			return 0; /* parents aren't equal! */
+	} else if (lhs->up || rhs->up) {
+		/* at least one parent non-NULL, but not both! */
+		return 0;
+	}
+
+	/* now test equality of scope contents - are they same length? */
+	if (ht_length(&lhs->scope) != ht_length(&lhs->scope))
+		return 0;
+
+	/* now actually compare keys and values, yawn */
+	it = ht_iter_keys_ptr(&lhs->scope);
+	while (it.has_next(&it)) {
+		key = (lisp_symbol*) it.next(&it);
+		rhs_value = (lisp_value*) ht_get_ptr(&rhs->scope, key);
+		if (!rhs_value) {
+			/* key not in other scope */
+			it.close(&it);
+			return 0;
+		}
+		value = (lisp_value*) ht_get_ptr(&lhs->scope, key);
+		if (!lisp_compare(value, rhs_value)) {
+			it.close(&it);
+			return 0;
+		}
+	}
+
+	/* fiine, they're equal, but somehow not the same pointer */
+	it.close(&it);
+	return 1;
+}
+
 /*
  * list
  */
@@ -171,6 +237,7 @@ static void list_print(FILE *f, lisp_value *v);
 static lisp_value *list_new(void);
 static lisp_value *list_eval(lisp_runtime*, lisp_scope*, lisp_value*);
 static struct iterator list_expand(lisp_value*);
+static int list_compare(lisp_value *self, lisp_value *other);
 
 static lisp_type type_list_obj = {
 	TYPE_HEADER,
@@ -181,6 +248,7 @@ static lisp_type type_list_obj = {
 	/* expand */ list_expand,
 	/* eval */ list_eval,
 	/* call */ call_error,
+	/* compare */ list_compare,
 };
 lisp_type *type_list = &type_list_obj;
 
@@ -275,6 +343,23 @@ static struct iterator list_expand(lisp_value *v)
 	return it;
 }
 
+static int list_compare(lisp_value *self, lisp_value *other)
+{
+	lisp_list *lhs, *rhs;
+	if (self == other)
+		return 1;
+	if (self->type != other->type || self->type != type_list)
+		return 0;
+	lhs = (lisp_list*) self;
+	rhs = (lisp_list*) other;
+	if (lisp_nil_p(self) && lisp_nil_p(other))
+		return 1; /* both nil */
+	if (lisp_nil_p(self) || lisp_nil_p(other))
+		return 0; /* one nil but not both */
+	return (lisp_compare(lhs->left, rhs->left) &&
+	        lisp_compare(lhs->right, rhs->right));
+}
+
 /*
  * symbol
  */
@@ -283,6 +368,7 @@ static void symbol_print(FILE *f, lisp_value *v);
 static lisp_value *symbol_new(void);
 static lisp_value *symbol_eval(lisp_runtime*, lisp_scope*, lisp_value*);
 static void symbol_free(void *v);
+static int symbol_compare_lisp(lisp_value *self, lisp_value *other);
 
 static lisp_type type_symbol_obj = {
 	TYPE_HEADER,
@@ -293,6 +379,7 @@ static lisp_type type_symbol_obj = {
 	/* expand */ iterator_empty,
 	/* eval */ symbol_eval,
 	/* call */ call_error,
+	/* commpare */ symbol_compare_lisp,
 };
 lisp_type *type_symbol = &type_symbol_obj;
 
@@ -328,12 +415,25 @@ static void symbol_free(void *v)
 	free(symbol);
 }
 
+static int symbol_compare_lisp(lisp_value *self, lisp_value *other)
+{
+	lisp_symbol *lhs, *rhs;
+	if (self == other)
+		return 1;
+	if (self->type != other->type || self->type != type_symbol)
+		return 0;
+	lhs = (lisp_symbol*) self;
+	rhs = (lisp_symbol*) other;
+	return strcmp(lhs->sym, rhs->sym) == 0;
+}
+
 /*
  * integer
  */
 
 static void integer_print(FILE *f, lisp_value *v);
 static lisp_value *integer_new(void);
+static int integer_compare(lisp_value *self, lisp_value *other);
 
 static lisp_type type_integer_obj = {
 	TYPE_HEADER,
@@ -344,6 +444,7 @@ static lisp_type type_integer_obj = {
 	/* expand */ iterator_empty,
 	/* eval */ eval_same,
 	/* call */ call_error,
+	/* compare */ integer_compare,
 };
 lisp_type *type_integer = &type_integer_obj;
 
@@ -360,11 +461,24 @@ static lisp_value *integer_new(void)
 	return (lisp_value*)integer;
 }
 
+static int integer_compare(lisp_value *self, lisp_value *other)
+{
+	lisp_integer *lhs, *rhs;
+	if (self == other)
+		return 1;
+	if (self->type != other->type || self->type != type_integer)
+		return 0;
+	lhs = (lisp_integer*) self;
+	rhs = (lisp_integer*) other;
+	return lhs->x == rhs->x;
+}
+
 /* string */
 
 static void string_print(FILE *f, lisp_value *v);
 static lisp_value *string_new(void);
 static void string_free(void *v);
+static int string_compare(lisp_value *self, lisp_value *other);
 
 static lisp_type type_string_obj = {
 	TYPE_HEADER,
@@ -375,6 +489,7 @@ static lisp_type type_string_obj = {
 	/* expand */ iterator_empty,
 	/* eval */ eval_same,
 	/* call */ call_error,
+	/* compare */ string_compare,
 };
 lisp_type *type_string = &type_string_obj;
 
@@ -400,6 +515,18 @@ static void string_free(void *v)
 	free(str);
 }
 
+static int string_compare(lisp_value *self, lisp_value *other)
+{
+	lisp_string *lhs, *rhs;
+	if (self == other)
+		return 1;
+	if (self->type != other->type || self->type != type_string)
+		return 0;
+	lhs = (lisp_string*) self;
+	rhs = (lisp_string*) other;
+	return strcmp(lhs->s, rhs->s) == 0;
+}
+
 /*
  * builtin
  */
@@ -408,6 +535,7 @@ static void builtin_print(FILE *f, lisp_value *v);
 static lisp_value *builtin_new(void);
 static lisp_value *builtin_call(lisp_runtime *rt, lisp_scope *scope,
                                 lisp_value *c, lisp_value *arguments);
+static int builtin_compare(lisp_value *self, lisp_value *other);
 
 static lisp_type type_builtin_obj = {
 	TYPE_HEADER,
@@ -418,6 +546,7 @@ static lisp_type type_builtin_obj = {
 	/* expand */ iterator_empty,
 	/* eval */ eval_error,
 	/* call */ builtin_call,
+	/* compare */ builtin_compare,
 };
 lisp_type *type_builtin = &type_builtin_obj;
 
@@ -454,6 +583,23 @@ static lisp_value *builtin_call(lisp_runtime *rt, lisp_scope *scope,
 	return builtin->call(rt, scope, (lisp_list *) arguments, builtin->user);
 }
 
+static int builtin_compare(lisp_value *self, lisp_value *other)
+{
+	lisp_builtin *lhs, *rhs;
+	if (self == other)
+		return 1;
+	if (self->type != other->type || self->type != type_builtin)
+		return 0;
+	lhs = (lisp_builtin*) self;
+	rhs = (lisp_builtin*) other;
+	return (
+		lhs->call == rhs->call
+		&& lhs->user == rhs->user
+		&& lhs->evald == rhs->evald
+		&& strcmp(lhs->name, rhs->name) == 0
+	);
+}
+
 /*
  * lambda
  */
@@ -463,6 +609,7 @@ static lisp_value *lambda_new(void);
 static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
                                lisp_value *c, lisp_value *arguments);
 static struct iterator lambda_expand(lisp_value *v);
+static int lambda_compare(lisp_value *self, lisp_value *other);
 
 static lisp_type type_lambda_obj = {
 	TYPE_HEADER,
@@ -473,6 +620,7 @@ static lisp_type type_lambda_obj = {
 	/* expand */ lambda_expand,
 	/* eval */ eval_error,
 	/* call */ lambda_call,
+	/* compare */ lambda_compare,
 };
 lisp_type *type_lambda = &type_lambda_obj;
 
@@ -569,6 +717,24 @@ static struct iterator lambda_expand(lisp_value *v)
 	return it;
 }
 
+static int lambda_compare(lisp_value *self, lisp_value *other)
+{
+	lisp_lambda *lhs, *rhs;
+	if (self == other)
+		return 1;
+	if (self->type != other->type || self->type != type_lambda)
+		return 0;
+	lhs = (lisp_lambda*) self;
+	rhs = (lisp_lambda*) other;
+	return (
+		lhs->lambda_type == rhs->lambda_type
+		&& lisp_compare((lisp_value*)lhs->args, (lisp_value*)rhs->args)
+		&& lisp_compare((lisp_value*)lhs->code, (lisp_value*)rhs->code)
+		&& lisp_compare((lisp_value*)lhs->closure, (lisp_value*)rhs->closure)
+		/* explicitly DO NOT compare first binding */
+	);
+}
+
 /*
  * some shortcuts for accessing these type methods on lisp values
  */
@@ -620,4 +786,9 @@ lisp_value *lisp_new(lisp_runtime *rt, lisp_type *typ)
 		rt->tail = new;
 	}
 	return new;
+}
+
+int lisp_compare(lisp_value *self, lisp_value *other)
+{
+	return self->type->compare(self, other);
 }

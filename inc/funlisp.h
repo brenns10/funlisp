@@ -197,6 +197,17 @@ lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope, lisp_value *callable,
                       lisp_value *arguments);
 
 /**
+ * Compare two values for equality by value (not pointer). Generally this
+ * comparison should only be valid among objects of the same type.
+ * @param self value to compare with
+ * @param other other value
+ * @return comparison result as a boolean
+ * @retval 0 NOT equal
+ * @retval nonzero equal
+ */
+int lisp_compare(lisp_value *self, lisp_value *other);
+
+/**
  * Perform type checking. Returns true (non-zero) when @a value has type @a
  * type.
  * @code
