@@ -194,12 +194,12 @@ int lisp_get_args(lisp_runtime *rt, lisp_list *list, char *format, ...)
 		format += 1;
 	}
 	if (*format != '\0') {
-		rt->error = "too many arguments";
-		rt->errno = LE_2MANY;
-		return 0;
-	} else if(!lisp_nil_p((lisp_value*)list)) {
 		rt->error = "not enough arguments";
 		rt->errno = LE_2FEW;
+		return 0;
+	} else if(!lisp_nil_p((lisp_value*)list)) {
+		rt->error = "too many arguments";
+		rt->errno = LE_2MANY;
 		return 0;
 	}
 	return 1;
