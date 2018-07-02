@@ -436,6 +436,7 @@ void lisp_clear_error(lisp_runtime *rt)
 	rt->error = NULL;
 	rt->error_stack = NULL;
 	rt->error_line = 0;
+	rt->errno = 0;
 }
 
 void lisp_print_error(lisp_runtime *rt, FILE *file)

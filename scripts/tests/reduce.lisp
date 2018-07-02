@@ -14,7 +14,7 @@
 (assert-error 'LE_VALUE ; TODO this is a silly error
               (reduce + '(1)))
 (assert-error 'LE_VALUE ; TODO this one too
-              (reduce + '()))
+              (reduce + 2 '()))
 (assert-error 'LE_TYPE
               (reduce + "am i a list? no"))
 (assert-error 'LE_TYPE

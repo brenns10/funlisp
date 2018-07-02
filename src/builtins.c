@@ -46,6 +46,9 @@ static lisp_value *lisp_builtin_cdr(lisp_runtime *rt, lisp_scope *scope,
 	if (!lisp_get_args(rt, arglist, "l", &firstarg)) {
 		return NULL;
 	}
+	if (lisp_nil_p((lisp_value*) firstarg)) {
+		return lisp_error(rt, LE_VALUE, "cdr of nil list");
+	}
 	return firstarg->right;
 }
 
@@ -194,6 +197,9 @@ static lisp_value *lisp_builtin_minus(lisp_runtime *rt, lisp_scope *scope,
 		i = (lisp_integer*) args->left;
 		val = - i->x;
 	} else {
+		if (args->left->type != type_integer) {
+			return lisp_error(rt, LE_TYPE, "expected integer");
+		}
 		i = (lisp_integer*) args->left;
 		val = i->x;
 		args = (lisp_list*)args->right;
@@ -663,6 +669,7 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "/", lisp_builtin_divide, NULL, 1);
 	lisp_scope_add_builtin(rt, scope, "==", lisp_builtin_cmp, CMP_EQ, 1);
 	lisp_scope_add_builtin(rt, scope, "=", lisp_builtin_cmp, CMP_EQ, 1);
+	lisp_scope_add_builtin(rt, scope, "!=", lisp_builtin_cmp, CMP_NE, 1);
 	lisp_scope_add_builtin(rt, scope, ">", lisp_builtin_cmp, CMP_GT, 1);
 	lisp_scope_add_builtin(rt, scope, ">=", lisp_builtin_cmp, CMP_GE, 1);
 	lisp_scope_add_builtin(rt, scope, "<", lisp_builtin_cmp, CMP_LT, 1);
