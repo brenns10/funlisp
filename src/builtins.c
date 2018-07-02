@@ -399,7 +399,7 @@ static lisp_value *lisp_builtin_map(lisp_runtime *rt, lisp_scope *scope,
 
 	/* Get the function from the first argument in the list. */
 	f = map_args->left;
-	if (map_args->right->type != type_list) {
+	if (lisp_nil_p(map_args->right)) {
 		return lisp_error(rt, LE_2FEW, "need at least two arguments");
 	}
 	map_args = (lisp_list*) map_args->right;
