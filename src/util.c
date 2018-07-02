@@ -100,6 +100,11 @@ lisp_list *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_list *list)
 		new_node->left = lisp_eval(rt, scope, list->left);
 		lisp_error_check(new_node->left);
 	}
+
+	if (list->type != type_list) {
+		/* badly behaved cons cell in list */
+		return (lisp_list*) lisp_error(rt, LE_SYNTAX, "unexpected cons cell in list");
+	}
 	new_node->right = lisp_nil_new(rt);
 	return new_head;
 }
@@ -132,7 +137,7 @@ int lisp_list_length(lisp_list *list)
 	return length;
 }
 
-lisp_value *lisp_quote_with(lisp_runtime *rt, lisp_value *value, char *sym) {
+lisp_list *lisp_quote_with(lisp_runtime *rt, lisp_value *value, char *sym) {
 	lisp_list *s, *l;
 	lisp_symbol *q;
 
@@ -143,10 +148,10 @@ lisp_value *lisp_quote_with(lisp_runtime *rt, lisp_value *value, char *sym) {
 	s->right = lisp_nil_new(rt);
 	l->right = (lisp_value*)s;
 	s->left = value;
-	return (lisp_value*)l;
+	return l;
 }
 
-lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value) {
+lisp_list *lisp_quote(lisp_runtime *rt, lisp_value *value) {
 	return lisp_quote_with(rt, value, "quote");
 }
 
@@ -212,14 +217,14 @@ int lisp_get_args(lisp_runtime *rt, lisp_list *list, char *format, ...)
 	return 1;
 }
 
-lisp_value *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, char can_free)
+lisp_list *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, char can_free)
 {
 	size_t i;
 	lisp_list *rv, *l;
 	lisp_string *s;
 
 	if (n == 0)
-		return lisp_nil_new(rt);
+		return (lisp_list*) lisp_nil_new(rt);
 
 	rv = (lisp_list*) lisp_new(rt, type_list);
 	l = rv;
@@ -236,15 +241,15 @@ lisp_value *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, char c
 
 	l->right = lisp_nil_new(rt);
 
-	return (lisp_value *) rv;
+	return rv;
 }
 
-lisp_value *lisp_singleton_list(lisp_runtime *rt, lisp_value *entry)
+lisp_list *lisp_singleton_list(lisp_runtime *rt, lisp_value *entry)
 {
 	lisp_list *l = (lisp_list *) lisp_new(rt, type_list);
 	l->left = entry;
 	l->right = lisp_nil_new(rt);
-	return (lisp_value *) l;
+	return l;
 }
 
 lisp_runtime *lisp_runtime_new(void)
@@ -290,7 +295,7 @@ lisp_scope *lisp_new_default_scope(lisp_runtime *rt)
 lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
                                     int argc, char **argv)
 {
-	lisp_value *args;
+	lisp_list *args;
 	lisp_value *main_func = lisp_scope_lookup(
 		rt, scope, lisp_symbol_new(rt, "main"));
 
@@ -300,8 +305,8 @@ lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
 	}
 
 	args = lisp_list_of_strings(rt, argv, argc, 0);
-	args = lisp_quote(rt, args);
-	args = lisp_singleton_list(rt, args);
+	args = lisp_quote(rt, (lisp_value*) args);
+	args = lisp_singleton_list(rt, (lisp_value*) args);
 	return lisp_call(rt, scope, main_func, args);
 }
 
@@ -456,4 +461,22 @@ enum lisp_errno lisp_sym_to_errno(lisp_symbol *sym)
 		if (strcmp(sym->sym, lisp_error_name[i]) == 0)
 			return (enum lisp_errno) i;
 	return LE_MAX_ERR;
+}
+
+int lisp_is_bad_list(lisp_list *l)
+{
+	if (l->type != type_list) return 1;
+	lisp_for_each(l) {} /* go to first item which is not an empty list */
+	return l->type != type_list;
+}
+
+int lisp_is_bad_list_of_lists(lisp_list *l)
+{
+	if (l->type != type_list) return 1;
+	lisp_for_each(l) {
+		if (lisp_is_bad_list((lisp_list*)l->left)) {
+			return 1;
+		}
+	}
+	return l->type != type_list;
 }

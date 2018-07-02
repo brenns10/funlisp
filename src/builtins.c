@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "funlisp_internal.h"
 
@@ -352,13 +353,13 @@ static lisp_list *get_quoted_left_items(lisp_runtime *rt, lisp_list *list_of_lis
 			left_items->right = lisp_new(rt, type_list);
 			left_items = (lisp_list*) left_items->right;
 		}
-		/* Check the next node in the list to make sure it's actually a list. */
+		/* Termination condition: one of the lists of args ends */
 		if (lisp_nil_p(list_of_lists->left)) {
 			return NULL;
 		}
 		/* Get the next node in the list and get the argument. */
 		l = (lisp_list*) list_of_lists->left;
-		left_items->left = lisp_quote(rt, l->left);
+		left_items->left = (lisp_value*) lisp_quote(rt, l->left);
 	}
 	left_items->right = lisp_nil_new(rt);
 	return rv;
@@ -377,10 +378,7 @@ static lisp_list *advance_lists(lisp_runtime *rt, lisp_list *list_of_lists)
 			right_items->right = lisp_new(rt, type_list);
 			right_items = (lisp_list*) right_items->right;
 		}
-		/* Check the next node in the list to make sure it's actually a list. */
-		if (list_of_lists->left->type != type_list) {
-			return NULL;
-		}
+
 		/* Get the next node in the list and get the argument. */
 		l = (lisp_list*) list_of_lists->left;
 		right_items->left = l->right;
@@ -388,25 +386,6 @@ static lisp_list *advance_lists(lisp_runtime *rt, lisp_list *list_of_lists)
 	right_items->right = lisp_nil_new(rt);
 	return rv;
 }
-
-static int lisp_is_bad_list(lisp_list *l)
-{
-	if (l->type != type_list) return 1;
-	lisp_for_each(l) {} /* go to first item which is not an empty list */
-	return l->type != type_list;
-}
-
-static int lisp_is_bad_list_of_lists(lisp_list *l)
-{
-	if (l->type != type_list) return 1;
-	lisp_for_each(l) {
-		if (lisp_is_bad_list((lisp_list*)l->left)) {
-			return 1;
-		}
-	}
-	return l->type != type_list;
-}
-
 
 static lisp_value *lisp_builtin_map(lisp_runtime *rt, lisp_scope *scope,
                                     lisp_list *map_args, void *user)
@@ -436,7 +415,7 @@ static lisp_value *lisp_builtin_map(lisp_runtime *rt, lisp_scope *scope,
 			ret->right = lisp_new(rt, type_list);
 			ret = (lisp_list*) ret->right;
 		}
-		ret->left = lisp_call(rt, scope, f, (lisp_value*)args);
+		ret->left = lisp_call(rt, scope, f, args);
 		lisp_error_check(ret->left);
 		map_args = advance_lists(rt, map_args);
 	}
@@ -490,7 +469,7 @@ static lisp_value *lisp_builtin_reduce(lisp_runtime *rt, lisp_scope *scope,
 
 	lisp_for_each(list) {
 		initializer = lisp_call(rt, scope, callable,
-		                        (lisp_value*) lisp_new_pair_list(rt, initializer, list->left));
+			lisp_new_pair_list(rt, initializer, list->left));
 		lisp_error_check(initializer);
 	}
 	return initializer;

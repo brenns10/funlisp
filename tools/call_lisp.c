@@ -13,12 +13,13 @@
 int call_double_or_square(lisp_runtime *rt, lisp_scope *scope, int x)
 {
 	int rv;
-	lisp_value *args, *res;
+	lisp_list *args;
+	lisp_value *res;
 	lisp_value *function = lisp_scope_lookup_string(rt, scope,
 		"double_or_square");
 	assert(function != NULL);
 
-	args = (lisp_value*) lisp_list_new(rt,
+	args = lisp_list_new(rt,
 		(lisp_value *) lisp_integer_new(rt, x),
 		(lisp_value *) lisp_nil_new(rt));
 	res = lisp_call(rt, scope, function, args);

@@ -214,7 +214,7 @@ static result lisp_parse_quote(lisp_runtime *rt, char *input, int index)
 	default:
 		assert(0);
 	}
-	r.result = lisp_quote_with(rt, r.result, qc);
+	r.result = (lisp_value*) lisp_quote_with(rt, r.result, qc);
 	return r;
 }
 

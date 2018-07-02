@@ -17,6 +17,12 @@
 (assert-error 'LE_VALUE
               (map == '(4 6) '(2 . 2)))
 
+(assert-error 'LE_SYNTAX
+              (map . ==))
+
+(assert-error 'LE_SYNTAX
+              (map == . 5))
+
 ; OUTPUT(0)
 ; just
 ; a

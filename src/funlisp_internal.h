@@ -106,7 +106,7 @@ struct lisp_type {
 	void (*free)(void *value);
 	struct iterator (*expand)(lisp_value*);
 	lisp_value * (*eval)(lisp_runtime *rt, lisp_scope *scope, lisp_value *value);
-	lisp_value * (*call)(lisp_runtime *rt, lisp_scope *scope, lisp_value *callable, lisp_value *arg);
+	lisp_value * (*call)(lisp_runtime *rt, lisp_scope *scope, lisp_value *callable, lisp_list *arg);
 	int (*compare)(lisp_value *self, lisp_value *other);
 };
 
@@ -160,8 +160,11 @@ void lisp_destroy(lisp_runtime *rt);
 void lisp_free(lisp_value *value);
 lisp_value *lisp_new(lisp_runtime *rt, lisp_type *typ);
 
-lisp_value *lisp_quote_with(lisp_runtime *rt, lisp_value *value, char *sym);
+lisp_list *lisp_quote_with(lisp_runtime *rt, lisp_value *value, char *sym);
 
 enum lisp_errno lisp_sym_to_errno(lisp_symbol *sym);
+
+int lisp_is_bad_list(lisp_list *l);
+int lisp_is_bad_list_of_lists(lisp_list *l);
 
 #endif

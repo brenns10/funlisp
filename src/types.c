@@ -37,7 +37,7 @@ static lisp_value *eval_same(lisp_runtime *rt, lisp_scope *s, lisp_value *v)
 }
 
 static lisp_value *call_error(lisp_runtime *rt, lisp_scope *s, lisp_value *c,
-                              lisp_value *v)
+                              lisp_list *v)
 {
 	(void)s;
 	(void)c;
@@ -262,11 +262,11 @@ static lisp_value *list_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *v)
 	}
 
 	if (list->right->type != type_list) {
-		return lisp_error(rt, LE_NOCALL, "You may not call with an s-expression");
+		return lisp_error(rt, LE_SYNTAX, "unexpected cons cell");
 	}
 	callable = lisp_eval(rt, scope, list->left);
 	lisp_error_check(callable);
-	return lisp_call(rt, scope, callable, list->right);
+	return lisp_call(rt, scope, callable, (lisp_list*) list->right);
 }
 
 static void list_print_internal(FILE *f, lisp_list *list)
@@ -534,7 +534,7 @@ static int string_compare(lisp_value *self, lisp_value *other)
 static void builtin_print(FILE *f, lisp_value *v);
 static lisp_value *builtin_new(void);
 static lisp_value *builtin_call(lisp_runtime *rt, lisp_scope *scope,
-                                lisp_value *c, lisp_value *arguments);
+                                lisp_value *c, lisp_list *arguments);
 static int builtin_compare(lisp_value *self, lisp_value *other);
 
 static lisp_type type_builtin_obj = {
@@ -566,21 +566,18 @@ static lisp_value *builtin_new()
 }
 
 static lisp_value *builtin_call(lisp_runtime *rt, lisp_scope *scope,
-                                lisp_value *c, lisp_value *arguments)
+                                lisp_value *c, lisp_list *arguments)
 {
 	lisp_builtin *builtin = (lisp_builtin*) c;
 	if (builtin->evald) {
-		/* this is ugly with all the casting but TODO fix it soon */
-		arguments = (lisp_value*)lisp_eval_list(rt, scope, (lisp_list*)arguments);
+		arguments = lisp_eval_list(rt, scope, arguments);
 		lisp_error_check(arguments);
-
+	} else if (lisp_is_bad_list(arguments)) {
+		/* lisp_eval_list() does this check for us, don't need to
+		 * duplicate */
+		return lisp_error(rt, LE_SYNTAX, "unexpected cons cell");
 	}
-	if (arguments->type != type_list) {
-		return lisp_error(rt, LE_SYNTAX,
-			"unrecognized syntax form, builtin must be "
-			"called with list");
-	}
-	return builtin->call(rt, scope, (lisp_list *) arguments, builtin->user);
+	return builtin->call(rt, scope, arguments, builtin->user);
 }
 
 static int builtin_compare(lisp_value *self, lisp_value *other)
@@ -607,7 +604,7 @@ static int builtin_compare(lisp_value *self, lisp_value *other)
 static void lambda_print(FILE *f, lisp_value *v);
 static lisp_value *lambda_new(void);
 static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
-                               lisp_value *c, lisp_value *arguments);
+                               lisp_value *c, lisp_list *arguments);
 static struct iterator lambda_expand(lisp_value *v);
 static int lambda_compare(lisp_value *self, lisp_value *other);
 
@@ -647,16 +644,20 @@ static lisp_value *lambda_new()
 }
 
 static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
-                               lisp_value *c, lisp_value *arguments)
+                               lisp_value *c, lisp_list *arguments)
 {
-	lisp_lambda *lambda;
+	lisp_lambda *lambda = (lisp_lambda*) c;
 	lisp_list *argvalues, *it1, *it2;
 	lisp_scope *inner;
 	lisp_value *result;
 
-	lambda = (lisp_lambda*) c;
-	argvalues = lisp_eval_list(rt, scope, (lisp_list*)arguments);
+	argvalues = lisp_eval_list(rt, scope, arguments);
 	lisp_error_check(argvalues);
+
+	if (lisp_is_bad_list(argvalues)) {
+		return lisp_error(rt, LE_SYNTAX, "unexpected cons cell");
+	}
+
 	inner = (lisp_scope*)lisp_new(rt, type_scope);
 	inner->up = lambda->closure;
 
@@ -755,10 +756,9 @@ lisp_value *lisp_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *value)
 }
 
 lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope,
-                      lisp_value *callable, lisp_value *args)
+                      lisp_value *callable, lisp_list *args)
 {
 	lisp_value *rv;
-	assert(args->type == type_list); /* soon this will be in the signature */
 	/* create new stack frame */
 	rt->stack = lisp_list_new(rt, callable, (lisp_value *) rt->stack);
 	rt->stack_depth++;

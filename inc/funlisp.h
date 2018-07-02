@@ -143,6 +143,26 @@ typedef struct lisp_builtin lisp_builtin;
 typedef struct lisp_lambda lisp_lambda;
 
 /**
+ * Lisp is a list-processing language, and ::lisp_list is a building block for
+ * lists. It is somewhat mis-named, because it actually represents a
+ * s-expression, which is just a simple data structure that has two pointers:
+ * left and right. Normal lists are a series of s-expressions, such that each
+ * node contains a pointer to data in "left", and a pointer to the next node in
+ * "right". S-expressions may be written in lisp like so:
+ *
+ *     > '(left . right)
+ *     (left . right)
+ *
+ * Normal lists are simply syntactic sugar for a series of nested s-expressions:
+ *
+ *     > '(a . (b . '()))
+ *     (a b )
+ *
+ * @ingroup list
+ */
+typedef struct lisp_list lisp_list;
+
+/**
  * @defgroup value Lisp Values
  * @{
  */
@@ -194,7 +214,7 @@ lisp_value *lisp_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *value);
  * @retval NULL when an error occurs
  */
 lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope, lisp_value *callable,
-                      lisp_value *arguments);
+                      lisp_list *arguments);
 
 /**
  * Compare two values for equality by value (not pointer). Generally this
@@ -297,24 +317,6 @@ lisp_value *lisp_scope_lookup_string(lisp_runtime *rt, lisp_scope *scope, char *
  */
 
 /**
- * Lisp is a list-processing language, and ::lisp_list is a building block for
- * lists. It is somewhat mis-named, because it actually represents a
- * s-expression, which is just a simple data structure that has two pointers:
- * left and right. Normal lists are a series of s-expressions, such that each
- * node contains a pointer to data in "left", and a pointer to the next node in
- * "right". S-expressions may be written in lisp like so:
- *
- *     > '(left . right)
- *     (left . right)
- *
- * Normal lists are simply syntactic sugar for a series of nested s-expressions:
- *
- *     > '(a . (b . '()))
- *     (a b )
- */
-typedef struct lisp_list lisp_list;
-
-/**
  * Type object of ::lisp_list, for type checking.
  * @sa lisp_is()
  */
@@ -338,7 +340,7 @@ lisp_list *lisp_list_new(lisp_runtime *rt, lisp_value *left, lisp_value *right);
  * @param entry item to put inside a list
  * @return a singleton list
  */
-lisp_value *lisp_singleton_list(lisp_runtime *rt, lisp_value *entry);
+lisp_list *lisp_singleton_list(lisp_runtime *rt, lisp_value *entry);
 
 /**
  * Convert the array of strings into a lisp list of string objects.
@@ -349,7 +351,7 @@ lisp_value *lisp_singleton_list(lisp_runtime *rt, lisp_value *entry);
  * by the strings? If so, can_free should be non-zero. If not, it should be 0.
  * @return ::lisp_list containing ::lisp_string objects
  */
-lisp_value *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, char can_free);
+lisp_list *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, char can_free);
 
 /**
  * Return the length of a list.
@@ -747,7 +749,7 @@ void lisp_sweep(lisp_runtime *rt);
  * @param value value to return quoted
  * @return value but quoted
  */
-lisp_value *lisp_quote(lisp_runtime *rt, lisp_value *value);
+lisp_list *lisp_quote(lisp_runtime *rt, lisp_value *value);
 
 /**
  * @}
