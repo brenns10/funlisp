@@ -36,7 +36,7 @@ bin/funlisp: tools/funlisp.o bin/libfunlisp.a
 	$(CC) $(CFLAGS) -ledit $^ -o $@
 
 clean: FORCE
-	rm -rf bin/* src/*.o tools/*.o
+	rm -rf bin/* src/*.o tools/*.o src/*.gcda src/*.gcno
 
 # Meant to be run after downloading the source tarball. This has an un-expressed
 # dependency on `man/funlisp.3`, since the source tarball includes generated
@@ -78,6 +78,7 @@ doc: FORCE
 	sphinx-build -d doc/.doctrees -b man doc man
 
 test: all FORCE
+	rm -f cov*.html src/*.gcda
 	@python test.py scripts/tests
 	gcovr -r src --html --html-details -o cov.html
 
