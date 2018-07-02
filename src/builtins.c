@@ -556,6 +556,21 @@ static lisp_value *lisp_builtin_quasiquote(lisp_runtime *rt, lisp_scope *scope,
 	return lisp_quasiquote(rt, scope, firstarg);
 }
 
+static lisp_value *lisp_builtin_eq(lisp_runtime *rt, lisp_scope *scope,
+                                   lisp_list *arglist, void *user)
+{
+	/* args are evaluated */
+	lisp_value *lhs, *rhs;
+	(void) user;
+	(void) scope;
+
+	if (!lisp_get_args(rt, arglist, "**", &lhs, &rhs)) {
+		return NULL;
+	}
+
+	return (lisp_value*) lisp_integer_new(rt, lhs == rhs);
+}
+
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
 	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval, NULL, 1);
@@ -585,4 +600,5 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "progn", lisp_builtin_progn, NULL, 0);
 	lisp_scope_add_builtin(rt, scope, "unquote", lisp_builtin_unquote, NULL, 0);
 	lisp_scope_add_builtin(rt, scope, "quasiquote", lisp_builtin_quasiquote, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "eq?", lisp_builtin_eq, NULL, 1);
 }
