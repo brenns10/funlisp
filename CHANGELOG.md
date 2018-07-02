@@ -12,13 +12,20 @@ will be made on patch versions.
 ## [Unreleased]
 ### Added
 - Line comments are now supported via the semicolon (`;`) character
-- Implement `progn` builtin, allowing sequences of multiple expressions to be
-  evaluated.
+- New builtins:
+  * `progn` - allows sequences of multiple expressions to be evaluated
+  * `quasiquote` - quote an expression, except for instances of `unquote`
+  * `unquote` - embed an evaluated expression within a `quasiquote`
+  * `assert` - raise an error if the value of an expression is "false" (the
+    integer 0, or not an integer at all)
+  * `assert-error` - assert than evaluating an expression results in an error
+  * `macro` - similar to lambda, but evaluates to code which is then evaluated
+- New syntax:
+  * Use backtick to quasiquote, and comma unquote, in the same way that the
+    single quote invokes the `quote` builtin
 - Added `funlisp` binary, which aims to be a complete, user-friendly repl and
   script runner.
 - Added `lisp_version`, a string containing the funlisp version.
-- Added `unquote` and `quasiquote`, and their special syntax forms (comma and
-  backtick respectively)
 - Added support for a `macro` builtin, which is identical to `lambda`, but
   instead returns code which should be evaluated.
 ### Changed
