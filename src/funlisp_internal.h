@@ -162,4 +162,6 @@ lisp_value *lisp_new(lisp_runtime *rt, lisp_type *typ);
 
 lisp_value *lisp_quote_with(lisp_runtime *rt, lisp_value *value, char *sym);
 
+enum lisp_errno lisp_sym_to_errno(lisp_symbol *sym);
+
 #endif

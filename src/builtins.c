@@ -29,7 +29,7 @@ static lisp_value *lisp_builtin_car(lisp_runtime *rt, lisp_scope *scope,
 		return NULL;
 	}
 	if (lisp_nil_p((lisp_value*) firstarg)) {
-		return lisp_error(rt, LE_ERROR, "car of nil list");
+		return lisp_error(rt, LE_VALUE, "car of nil list");
 	}
 	return firstarg->left;
 }
@@ -255,7 +255,7 @@ static lisp_value *lisp_builtin_divide(lisp_runtime *rt, lisp_scope *scope,
 		}
 		i = (lisp_integer*) args->left;
 		if (i->x == 0) {
-			return lisp_error(rt, LE_ERROR, "divide by zero");
+			return lisp_error(rt, LE_VALUE, "divide by zero");
 		}
 		val /= i->x;
 	}
@@ -603,6 +603,44 @@ static lisp_value *lisp_builtin_assert(lisp_runtime *rt, lisp_scope *scope,
 		return (lisp_value*) expr;
 }
 
+static lisp_value *lisp_builtin_assert_error(
+		lisp_runtime *rt, lisp_scope *scope, lisp_list *arglist,
+		void *user)
+{
+	/* args are NOT evaluated, to avoid error handling short circuit */
+	lisp_value *sym, *expr;
+	lisp_symbol *sym_evald;
+	enum lisp_errno errno;
+	(void) user;
+
+	if (!lisp_get_args(rt, arglist, "**", &sym, &expr))
+		return NULL;
+
+	sym_evald = (lisp_symbol*) lisp_eval(rt, scope, sym);
+	lisp_error_check(sym_evald);
+	if (sym_evald->type != type_symbol)
+		return lisp_error(rt, LE_TYPE, "error type must be symbol");
+	errno = lisp_sym_to_errno(sym_evald);
+	if (errno == LE_MAX_ERR)
+		return lisp_error(rt, LE_VALUE, "unrecognized error type");
+
+	lisp_eval(rt, scope, expr); /* we don't care, cause we expect error */
+	/* NO ERROR CHECK HERE */
+
+	if (errno == lisp_get_errno(rt)) {
+		lisp_clear_error(rt);
+		return (lisp_value*) sym_evald;
+	} else {
+		fprintf(stderr, "Assertion error! Expected %s\n",
+			lisp_error_name[errno]);
+		fprintf(stderr, "This was the actual error encountered: ");
+		lisp_print_error(rt, stderr);
+		fprintf(stderr, "\nBelow should be the assertion error stack trace.\n");
+		lisp_clear_error(rt);
+		return lisp_error(rt, LE_ASSERT, "assertion error");
+	}
+}
+
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
 	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval, NULL, 1);
@@ -635,4 +673,5 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "eq?", lisp_builtin_eq, NULL, 1);
 	lisp_scope_add_builtin(rt, scope, "equal?", lisp_builtin_equal, NULL, 1);
 	lisp_scope_add_builtin(rt, scope, "assert", lisp_builtin_assert, NULL, 1);
+	lisp_scope_add_builtin(rt, scope, "assert-error", lisp_builtin_assert_error, NULL, 0);
 }

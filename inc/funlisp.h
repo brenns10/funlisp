@@ -768,9 +768,12 @@ enum lisp_errno {
 	LE_NOTFOUND, /* not found */
 	LE_EXIT,     /* exit the interpreter */
 	LE_ASSERT,   /* assertion error */
+	LE_VALUE,    /* invalid argument */
 
-	LE_UNUSED__  /* don't use this, it's just for the trailing comma */
+	LE_MAX_ERR   /* not a real error, don't use */
 };
+
+extern const char *lisp_error_name[LE_MAX_ERR];
 
 /**
  * Raise an error in the interpreter and return NULL.

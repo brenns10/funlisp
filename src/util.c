@@ -18,6 +18,23 @@
 
 const char * const lisp_version = FUNLISP_VERSION;
 
+const char *lisp_error_name[LE_MAX_ERR] = {
+	"LE_NONE",
+	"LE_ERROR",
+	"LE_EOF",
+	"LE_SYNTAX",
+	"LE_FERROR",
+	"LE_2MANY",
+	"LE_2FEW",
+	"LE_TYPE",
+	"LE_NOCALL",
+	"LE_NOEVAL",
+	"LE_NOTFOUND",
+	"LE_EXIT",
+	"LE_ASSERT",
+	"LE_VALUE",
+};
+
 void lisp_scope_bind(lisp_scope *scope, lisp_symbol *symbol, lisp_value *value)
 {
 	lisp_lambda *l;
@@ -419,8 +436,17 @@ void lisp_print_error(lisp_runtime *rt, FILE *file)
 	if (rt->error_line)
 		fprintf(file, "at line %d: ", rt->error_line);
 
-	fprintf(file, "Error %d: %s\n\n", rt->errno, rt->error);
+	fprintf(file, "Error %s: %s\n", lisp_error_name[rt->errno], rt->error);
 
 	if (rt->error_stack)
 		lisp_dump_stack(rt, rt->error_stack, file);
+}
+
+enum lisp_errno lisp_sym_to_errno(lisp_symbol *sym)
+{
+	int i;
+	for (i = 0; i < LE_MAX_ERR; i++)
+		if (strcmp(sym->sym, lisp_error_name[i]) == 0)
+			return (enum lisp_errno) i;
+	return LE_MAX_ERR;
 }
