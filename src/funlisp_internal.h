@@ -116,11 +116,6 @@ struct lisp_symbol {
 	char *sym;
 };
 
-struct lisp_error {
-	LISP_VALUE_HEAD;
-	char *message;
-};
-
 struct lisp_integer {
 	LISP_VALUE_HEAD;
 	int x;
