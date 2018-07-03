@@ -530,10 +530,11 @@ static lisp_value *lisp_builtin_unquote(lisp_runtime *rt, lisp_scope *scope,
 }
 
 static lisp_value *lisp_quasiquote(lisp_runtime *rt, lisp_scope *scope,
-                                   lisp_value *v)
+                                   void *user, lisp_value *v)
 {
 	lisp_list *vl;
 	lisp_symbol *vlls;
+	(void)user;
 
 	if (v->type != type_list || lisp_nil_p(v)) {
 		return v;
@@ -546,12 +547,8 @@ static lisp_value *lisp_quasiquote(lisp_runtime *rt, lisp_scope *scope,
 			return lisp_eval(rt, scope, v);
 		}
 	}
-	lisp_for_each(vl) {
-		vl->left = lisp_quasiquote(rt, scope, vl->left);
-		if (!vl->left)
-			return NULL;
-	}
-	return v;
+
+	return (lisp_value*) lisp_map(rt, scope, NULL, lisp_quasiquote, vl);
 }
 
 static lisp_value *lisp_builtin_quasiquote(lisp_runtime *rt, lisp_scope *scope,
@@ -565,7 +562,7 @@ static lisp_value *lisp_builtin_quasiquote(lisp_runtime *rt, lisp_scope *scope,
 	if (!lisp_get_args(rt, arglist, "*", &firstarg)) {
 		return NULL;
 	}
-	return lisp_quasiquote(rt, scope, firstarg);
+	return lisp_quasiquote(rt, scope, NULL, firstarg);
 }
 
 static lisp_value *lisp_builtin_eq(lisp_runtime *rt, lisp_scope *scope,

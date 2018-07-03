@@ -7,4 +7,7 @@
   (macro (condition expr-if-true)
          `(if ,condition ,expr-if-true '())))
 
+(assert (equal? (when (< 1 3) 5) 5))
+(assert (equal? (when (< 3 1) 5) '()))
+
 ; OUTPUT(0)
