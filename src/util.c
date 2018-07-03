@@ -81,32 +81,16 @@ void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
 	lisp_scope_bind(scope, symbol, (lisp_value*)builtin);
 }
 
+lisp_value *lisp_mapper_eval(lisp_runtime *rt, lisp_scope *scope, void *user,
+                             lisp_value *input)
+{
+	(void) user;
+	return lisp_eval(rt, scope, input);
+}
+
 lisp_list *lisp_eval_list(lisp_runtime *rt, lisp_scope *scope, lisp_list *list)
 {
-	lisp_list *new_head=NULL, *new_node;
-
-	if (lisp_nil_p((lisp_value*) list)) {
-		return list;
-	}
-
-	lisp_for_each(list) {
-		if (!new_head) {
-			new_head = (lisp_list*) lisp_new(rt, type_list);
-			new_node = new_head;
-		} else {
-			new_node->right = lisp_new(rt, type_list);
-			new_node = (lisp_list*) new_node->right;
-		}
-		new_node->left = lisp_eval(rt, scope, list->left);
-		lisp_error_check(new_node->left);
-	}
-
-	if (list->type != type_list) {
-		/* badly behaved cons cell in list */
-		return (lisp_list*) lisp_error(rt, LE_SYNTAX, "unexpected cons cell in list");
-	}
-	new_node->right = lisp_nil_new(rt);
-	return new_head;
+	return lisp_map(rt, scope, NULL, lisp_mapper_eval, list);
 }
 
 lisp_value *lisp_progn(lisp_runtime *rt, lisp_scope *scope, lisp_list *l)
@@ -480,4 +464,33 @@ int lisp_is_bad_list_of_lists(lisp_list *l)
 		}
 	}
 	return l->type != type_list;
+}
+
+lisp_list *lisp_map(lisp_runtime *rt, lisp_scope *scope, void *user,
+                     lisp_mapper func, lisp_list *list)
+{
+	lisp_list *new_head=NULL, *new_node;
+
+	if (lisp_nil_p((lisp_value*) list)) {
+		return list;
+	}
+
+	lisp_for_each(list) {
+		if (!new_head) {
+			new_head = (lisp_list*) lisp_new(rt, type_list);
+			new_node = new_head;
+		} else {
+			new_node->right = lisp_new(rt, type_list);
+			new_node = (lisp_list*) new_node->right;
+		}
+		new_node->left = func(rt, scope, user, list->left);
+		lisp_error_check(new_node->left);
+	}
+
+	if (list->type != type_list) {
+		/* badly behaved cons cell in list */
+		return (lisp_list*) lisp_error(rt, LE_SYNTAX, "unexpected cons cell in list");
+	}
+	new_node->right = lisp_nil_new(rt);
+	return new_head;
 }

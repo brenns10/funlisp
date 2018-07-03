@@ -149,6 +149,25 @@ struct lisp_lambda {
 	int lambda_type;
 };
 
+/**
+ * A function which consumes a single ::lisp_value and produces a new one as a
+ * result.
+ */
+typedef lisp_value *(*lisp_mapper)(lisp_runtime*, lisp_scope*, void*, lisp_value*);
+
+/**
+ * Map @a func across @a list, returning the output as a newly allocated list.
+ * For context, provide @a rt, @a scope, and an optional @a user pointer to the
+ * mapper.
+ *
+ * This is a surprisingly useful utility. Many operations we need to do in the
+ * interpreter involve either looping over a list (see lisp_for_each()), or
+ * looping over the list and producing a new one as a result. While simple loops
+ * may be implemented as a macro, we need to use a function pointer to pass in
+ * the operation which produces one value from another.
+ */
+lisp_list *lisp_map(lisp_runtime *rt, lisp_scope *scope, void *user, lisp_mapper func, lisp_list *list);
+
 #define TP_LAMBDA 0
 #define TP_MACRO  1
 
