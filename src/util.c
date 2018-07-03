@@ -69,14 +69,14 @@ lisp_value *lisp_scope_lookup_string(lisp_runtime *rt, lisp_scope *scope, char *
 	/* a dirty hack but why allocate here? */
 	lisp_symbol symbol;
 	symbol.type = type_symbol;
-	symbol.sym = name;
+	symbol.s = name;
 	return lisp_scope_lookup(rt, scope, &symbol);
 }
 
 void lisp_scope_add_builtin(lisp_runtime *rt, lisp_scope *scope, char *name,
                             lisp_builtin_func call, void *user, int evald)
 {
-	lisp_symbol *symbol = lisp_symbol_new(rt, name);
+	lisp_symbol *symbol = lisp_symbol_new(rt, name, 0);
 	lisp_builtin *builtin = lisp_builtin_new(rt, name, call, user, evald);
 	lisp_scope_bind(scope, symbol, (lisp_value*)builtin);
 }
@@ -126,7 +126,7 @@ lisp_list *lisp_quote_with(lisp_runtime *rt, lisp_value *value, char *sym) {
 	lisp_symbol *q;
 
 	l = (lisp_list*)lisp_new(rt, type_list);
-	q = lisp_symbol_new(rt, sym);
+	q = lisp_symbol_new(rt, sym, 0);
 	l->left = (lisp_value*)q;
 	s = (lisp_list*) lisp_new(rt, type_list);
 	s->right = lisp_nil_new(rt);
@@ -201,7 +201,7 @@ int lisp_get_args(lisp_runtime *rt, lisp_list *list, char *format, ...)
 	return 1;
 }
 
-lisp_list *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, char can_free)
+lisp_list *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, int flags)
 {
 	size_t i;
 	lisp_list *rv, *l;
@@ -214,9 +214,7 @@ lisp_list *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, char ca
 	l = rv;
 
 	for (i = 0; i < n; i++) {
-		s = (lisp_string *) lisp_new(rt, type_string);
-		s->s = list[i];
-		s->can_free = can_free;
+		s = lisp_string_new(rt, list[i], flags);
 		l->left = (lisp_value *) s;
 
 		l->right = lisp_new(rt, type_list);
@@ -281,7 +279,7 @@ lisp_value *lisp_run_main_if_exists(lisp_runtime *rt, lisp_scope *scope,
 {
 	lisp_list *args;
 	lisp_value *main_func = lisp_scope_lookup(
-		rt, scope, lisp_symbol_new(rt, "main"));
+		rt, scope, lisp_symbol_new(rt, "main", 0));
 
 	if (main_func == NULL) {
 		lisp_clear_error(rt);
@@ -322,19 +320,19 @@ static char *my_strdup(char *s)
 	return new;
 }
 
-lisp_string *lisp_string_new_unowned(lisp_runtime *rt, char *str)
+static struct lisp_text *lisp_text_new(lisp_runtime *rt, lisp_type *tp, char *str, int flags)
 {
-	lisp_string *string = (lisp_string *) lisp_new(rt, type_string);
+	lisp_string *string = (lisp_string *) lisp_new(rt, tp);
+	if (flags & LS_CPY)
+		str = my_strdup(str);
 	string->s = str;
-	string->can_free = 0;
+	string->can_free = flags & LS_OWN;
 	return string;
 }
 
-lisp_string *lisp_string_new(lisp_runtime *rt, char *str)
+lisp_string *lisp_string_new(lisp_runtime *rt, char *str, int flags)
 {
-	lisp_string *string = (lisp_string *) lisp_new(rt, type_string);
-	string->s = my_strdup(str);
-	return string;
+	return (lisp_string*) lisp_text_new(rt, type_string, str, flags);
 }
 
 char *lisp_string_get(lisp_string *s)
@@ -342,16 +340,14 @@ char *lisp_string_get(lisp_string *s)
 	return s->s;
 }
 
-lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *sym)
+lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *sym, int flags)
 {
-	lisp_symbol *err = (lisp_symbol*)lisp_new(rt, type_symbol);
-	err->sym = my_strdup(sym);
-	return err;
+	return (lisp_symbol*) lisp_text_new(rt, type_symbol, sym, flags);
 }
 
 char *lisp_symbol_get(lisp_symbol *sym)
 {
-	return sym->sym;
+	return sym->s;
 }
 
 lisp_list *lisp_list_new(lisp_runtime *rt, lisp_value *left, lisp_value *right)
@@ -443,7 +439,7 @@ enum lisp_errno lisp_sym_to_errno(lisp_symbol *sym)
 {
 	int i;
 	for (i = 0; i < LE_MAX_ERR; i++)
-		if (strcmp(sym->sym, lisp_error_name[i]) == 0)
+		if (strcmp(sym->s, lisp_error_name[i]) == 0)
 			return (enum lisp_errno) i;
 	return LE_MAX_ERR;
 }

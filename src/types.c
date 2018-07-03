@@ -118,14 +118,14 @@ lisp_type *type_scope = &type_scope_obj;
 static unsigned int symbol_hash(void *symbol)
 {
 	lisp_symbol **sym = symbol;
-	return ht_string_hash(&(*sym)->sym);
+	return ht_string_hash(&(*sym)->s);
 }
 
 static int symbol_compare(void *left, void *right)
 {
 	lisp_symbol **sym1 = left;
 	lisp_symbol **sym2 = right;
-	return strcmp((*sym1)->sym, (*sym2)->sym);
+	return strcmp((*sym1)->s, (*sym2)->s);
 }
 
 static lisp_value *scope_new(void)
@@ -364,37 +364,45 @@ static int list_compare(lisp_value *self, lisp_value *other)
  * symbol
  */
 
-static void symbol_print(FILE *f, lisp_value *v);
-static lisp_value *symbol_new(void);
+static void text_print(FILE *f, lisp_value *v);
+static lisp_value *text_new(void);
 static lisp_value *symbol_eval(lisp_runtime*, lisp_scope*, lisp_value*);
-static void symbol_free(void *v);
-static int symbol_compare_lisp(lisp_value *self, lisp_value *other);
+static void text_free(void *v);
+static int text_compare(lisp_value *self, lisp_value *other);
 
 static lisp_type type_symbol_obj = {
 	TYPE_HEADER,
 	/* name */ "symbol",
-	/* print */ symbol_print,
-	/* new */ symbol_new,
-	/* free */ symbol_free,
+	/* print */ text_print,
+	/* new */ text_new,
+	/* free */ text_free,
 	/* expand */ iterator_empty,
 	/* eval */ symbol_eval,
 	/* call */ call_error,
-	/* commpare */ symbol_compare_lisp,
+	/* commpare */ text_compare,
 };
 lisp_type *type_symbol = &type_symbol_obj;
 
-static void symbol_print(FILE *f, lisp_value *v)
+static void text_print(FILE *f, lisp_value *v)
 {
-	lisp_symbol *symbol = (lisp_symbol*) v;
-	fprintf(f, "%s", symbol->sym);
+	struct lisp_text *text = (struct lisp_text*) v;
+	fprintf(f, "%s", text->s);
 }
 
-static lisp_value *symbol_new(void)
+static lisp_value *text_new(void)
 {
-	lisp_symbol *symbol = malloc(sizeof(lisp_symbol));
-	symbol->sym = NULL;
-	symbol->can_free = 1;
-	return (lisp_value*)symbol;
+	struct lisp_text *text = malloc(sizeof(struct lisp_text));
+	text->s = NULL;
+	text->can_free = 1;
+	return (lisp_value*)text;
+}
+
+static void text_free(void *v)
+{
+	struct lisp_text *text = (struct lisp_text*) v;
+	if (text->can_free)
+		free(text->s);
+	free(text);
 }
 
 static lisp_value *symbol_eval(lisp_runtime *rt, lisp_scope *scope,
@@ -407,24 +415,16 @@ static lisp_value *symbol_eval(lisp_runtime *rt, lisp_scope *scope,
 	return lisp_scope_lookup(rt, scope, symbol);
 }
 
-static void symbol_free(void *v)
+static int text_compare(lisp_value *self, lisp_value *other)
 {
-	lisp_symbol *symbol = (lisp_symbol*) v;
-	if (symbol->can_free)
-		free(symbol->sym);
-	free(symbol);
-}
-
-static int symbol_compare_lisp(lisp_value *self, lisp_value *other)
-{
-	lisp_symbol *lhs, *rhs;
+	struct lisp_text *lhs, *rhs;
 	if (self == other)
 		return 1;
-	if (self->type != other->type || self->type != type_symbol)
+	if (self->type != other->type)
 		return 0;
-	lhs = (lisp_symbol*) self;
-	rhs = (lisp_symbol*) other;
-	return strcmp(lhs->sym, rhs->sym) == 0;
+	lhs = (struct lisp_text*) self;
+	rhs = (struct lisp_text*)other;
+	return strcmp(lhs->s, rhs->s) == 0;
 }
 
 /*
@@ -475,57 +475,18 @@ static int integer_compare(lisp_value *self, lisp_value *other)
 
 /* string */
 
-static void string_print(FILE *f, lisp_value *v);
-static lisp_value *string_new(void);
-static void string_free(void *v);
-static int string_compare(lisp_value *self, lisp_value *other);
-
 static lisp_type type_string_obj = {
 	TYPE_HEADER,
 	/* name */ "string",
-	/* print */ string_print,
-	/* new */ string_new,
-	/* free */ string_free,
+	/* print */ text_print,
+	/* new */ text_new,
+	/* free */ text_free,
 	/* expand */ iterator_empty,
 	/* eval */ eval_same,
 	/* call */ call_error,
-	/* compare */ string_compare,
+	/* compare */ text_compare,
 };
 lisp_type *type_string = &type_string_obj;
-
-static void string_print(FILE *f, lisp_value *v)
-{
-	lisp_string *str = (lisp_string*) v;
-	fprintf(f, "%s", str->s);
-}
-
-static lisp_value *string_new(void)
-{
-	lisp_string *str = malloc(sizeof(lisp_string));
-	str->s = NULL;
-	str->can_free = 1;
-	return (lisp_value*)str;
-}
-
-static void string_free(void *v)
-{
-	lisp_string *str = (lisp_string*) v;
-	if (str->can_free)
-		free(str->s);
-	free(str);
-}
-
-static int string_compare(lisp_value *self, lisp_value *other)
-{
-	lisp_string *lhs, *rhs;
-	if (self == other)
-		return 1;
-	if (self->type != other->type || self->type != type_string)
-		return 0;
-	lhs = (lisp_string*) self;
-	rhs = (lisp_string*) other;
-	return strcmp(lhs->s, rhs->s) == 0;
-}
 
 /*
  * builtin
@@ -624,7 +585,7 @@ lisp_type *type_lambda = &type_lambda_obj;
 static void lambda_print(FILE *f, lisp_value *v)
 {
 	lisp_lambda *l = (lisp_lambda *) v;
-	char *name = l->first_binding ? l->first_binding->sym : "(anonymous)";
+	char *name = l->first_binding ? l->first_binding->s : "(anonymous)";
 	if (l->lambda_type == TP_LAMBDA) {
 		fprintf(f, "<lambda %s>", name);
 	} else {

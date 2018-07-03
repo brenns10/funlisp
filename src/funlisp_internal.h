@@ -110,21 +110,15 @@ struct lisp_type {
 	int (*compare)(lisp_value *self, lisp_value *other);
 };
 
-struct lisp_symbol {
+struct lisp_text {
 	LISP_VALUE_HEAD;
 	char can_free;
-	char *sym;
+	char *s;
 };
 
 struct lisp_integer {
 	LISP_VALUE_HEAD;
 	int x;
-};
-
-struct lisp_string {
-	LISP_VALUE_HEAD;
-	char can_free;
-	char *s;
 };
 
 struct lisp_builtin {

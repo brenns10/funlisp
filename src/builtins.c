@@ -543,7 +543,7 @@ static lisp_value *lisp_quasiquote(lisp_runtime *rt, lisp_scope *scope,
 	vl = (lisp_list *) v;
 	if (vl->left->type == type_symbol) {
 		vlls = (lisp_symbol *) vl->left;
-		if (strcmp(vlls->sym, "unquote") == 0) {
+		if (strcmp(vlls->s, "unquote") == 0) {
 			return lisp_eval(rt, scope, v);
 		}
 	}

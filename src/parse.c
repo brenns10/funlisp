@@ -110,6 +110,7 @@ static result lisp_parse_string(lisp_runtime *rt, char *input, int index)
 	cb_trim(&cb);
 	str = (lisp_string*)lisp_new(rt, type_string);
 	str->s = cb.buf;
+	str->can_free = 1;
 	i++;
 	return_result(str, i);
 }
@@ -189,9 +190,10 @@ static result lisp_parse_symbol(lisp_runtime *rt, char *input, int index)
 		return_result_err(NULL, index, LE_EOF);
 	}
 	s = (lisp_symbol*)lisp_new(rt, type_symbol);
-	s->sym = malloc(n + 1);
-	strncpy(s->sym, input + index, n);
-	s->sym[n] = '\0';
+	s->s = malloc(n + 1);
+	strncpy(s->s, input + index, n);
+	s->can_free = 1; /* interpreter owns symbol */
+	s->s[n] = '\0';
 	return_result(s, index + n);
 }
 
@@ -274,7 +276,7 @@ lisp_value *lisp_parse_progn(lisp_runtime *rt, char *input)
 	int bytes, index=0;
 
 	final_result = (lisp_list*) lisp_new(rt, type_list);
-	final_result->left = (lisp_value*)lisp_symbol_new(rt, "progn");
+	final_result->left = (lisp_value*)lisp_symbol_new(rt, "progn", 0);
 	prev = final_result;
 	for (;;) {
 		bytes = lisp_parse_value(rt, input, index, &expression);

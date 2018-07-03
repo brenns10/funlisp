@@ -114,7 +114,7 @@ typedef struct lisp_scope lisp_scope;
  * The symbols are: define, abs, lambda, x, if, and <.
  * @ingroup types
  */
-typedef struct lisp_symbol lisp_symbol;
+typedef struct lisp_text lisp_symbol;
 
 /**
  * ::lisp_integer contains an int object of whatever size the C implementation
@@ -127,7 +127,7 @@ typedef struct lisp_integer lisp_integer;
  * This is a string (which occurs quoted in lisp source)
  * @ingroup types
  */
-typedef struct lisp_string lisp_string;
+typedef struct lisp_text lisp_string;
 
 /**
  * This data structure contains a native C function which may be called by
@@ -347,11 +347,10 @@ lisp_list *lisp_singleton_list(lisp_runtime *rt, lisp_value *entry);
  * @param rt runtime
  * @param list an array of strings
  * @param n length of the array
- * @param can_free Does the interpreter take ownership of the memory pointed at
- * by the strings? If so, can_free should be non-zero. If not, it should be 0.
+ * @param flags same flags passed to lisp_string_new()
  * @return ::lisp_list containing ::lisp_string objects
  */
-lisp_list *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, char can_free);
+lisp_list *lisp_list_of_strings(lisp_runtime *rt, char **list, size_t n, int flags);
 
 /**
  * Return the length of a list.
@@ -431,24 +430,34 @@ extern lisp_type *type_builtin;
 extern lisp_type *type_lambda;
 
 /**
- * Return a new, "un-owned" string. "Un-owned" means that @a str will not be
- * freed when the ::lisp_string is garbage collected. However, the ::lisp_string
- * will still contain the exact reference to @a str, not a copy. So, your
- * application **must not** free @a str until the ::lisp_string containing it is
- * garbage collected. The safest approach here is if you are certain that your
- * string will not be freed until after the ::lisp_runtime is freed.
+ * Flag instructing string/symbol creation routines that they should copy the
+ * string buffer itself, and use the copy rather than the original argument.
+ * This could be useful in case callers would like to free the string after
+ * creating a lisp symbol/string from it.
  *
- * @code
- *     lisp_value *v = (lisp_string *) lisp_string_new_unowned(rt, "hello");
- * @endcode
- *
- * @note This is the ideal function to use with string literals, since they are
- * statically allocated.
- * @param rt runtime
- * @param str string which will not be freed by the garbage collector
- * @return ::lisp_string object pointing to your string
+ * @warning If you use this without ::LS_OWN, you will have memory leaks,
+ * because funlisp will allocate a new string, but never free it.
+ * @see LS_OWN
+ * @see lisp_string_new()
  */
-lisp_string *lisp_string_new_unowned(lisp_runtime *rt, char *str);
+#define LS_CPY 0x1
+
+/**
+ * Flag instructing string/symbol creation routines that when the wrapper object
+ * (lisp_string/lisp_symbol) is freed, the string itself should also be freed.
+ * Put in other words, the lisp context should "own" the reference to the
+ * string.
+ *
+ * When this is unset, we expect that the string exists for the duration of the
+ * lisp_context, and we do not free it under any circumstances. This is good for
+ * C string literals, or strings that you know you will keep around for longer
+ * than the ::lisp_runtime will exist.
+ *
+ * @warning If you unset this, but set ::LS_CPY, you will have memory leaks!
+ * @see LS_CPY
+ * @see lisp_string_new()
+ */
+#define LS_OWN 0x2
 
 /**
  * Return a new string. This function takes a "safe" approach, by copying your
@@ -460,9 +469,12 @@ lisp_string *lisp_string_new_unowned(lisp_runtime *rt, char *str);
  * efficient way, since the string gets copied.
  * @param rt runtime
  * @param str string to copy and use in an owned string
+ * @param flags flags related to copying and ownership of @a str
  * @return a new ::lisp_string
+ * @see LS_CPY
+ * @see LS_OWN
  */
-lisp_string *lisp_string_new(lisp_runtime *rt, char *str);
+lisp_string *lisp_string_new(lisp_runtime *rt, char *str, int flags);
 
 /**
  * Return a pointer to the string contained within a ::lisp_string. The
@@ -477,9 +489,12 @@ char *lisp_string_get(lisp_string *s);
  * it on garbage collection (much like lisp_string_new()).
  * @param rt runtime
  * @param string the symbol to create
+ * @param flags flags related to copying and ownership of @a string
  * @return the resulting symbol
+ * @see LS_CPY
+ * @see LS_OWN
  */
-lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *string);
+lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *string, int flags);
 
 /**
  * Return the string contained in the symbol.
