@@ -30,4 +30,6 @@
 (assert (equal? (eval '(+ 1 1)) (+ 1 1)))
 (assert (equal? (cons 'a '(b c d)) '(a b c d)))
 (assert (equal? (cons 'a 'b) '(a . b)))
+
+(assert-error 'LE_TYPE (define 5 5))
 ; OUTPUT(0)
