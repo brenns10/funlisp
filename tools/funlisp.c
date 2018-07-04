@@ -21,6 +21,9 @@
 
 #include "funlisp.h"
 
+int disable_symcache = 0;
+int disable_strcache = 0;
+
 /**
  * Return a complete line of input from the command line, using libedit.
  *
@@ -120,9 +123,16 @@ void repl_run_with_rt(lisp_runtime *rt, lisp_scope *scope)
  */
 int repl_run(void)
 {
-	lisp_runtime *rt = lisp_runtime_new();
-	lisp_scope *scope = lisp_new_default_scope(rt);
-	lisp_enable_symcache(rt);
+	lisp_runtime *rt;
+	lisp_scope *scope;
+
+	rt = lisp_runtime_new();
+	if (!disable_symcache)
+		lisp_enable_symcache(rt);
+	if (!disable_strcache)
+		lisp_enable_strcache(rt);
+	scope = lisp_new_default_scope(rt);
+
 	repl_run_with_rt(rt, scope);
 	lisp_runtime_free(rt); /* implicitly sweeps everything */
 	return 0;
@@ -146,8 +156,11 @@ int file_run(char *name, int argc, char **argv, int repl)
 	}
 
 	rt = lisp_runtime_new();
+	if (!disable_symcache)
+		lisp_enable_symcache(rt);
+	if (!disable_strcache)
+		lisp_enable_strcache(rt);
 	scope = lisp_new_default_scope(rt);
-	lisp_enable_symcache(rt);
 
 	if (!lisp_load_file(rt, scope, file)) {
 		fclose(file);
@@ -182,7 +195,9 @@ int help(void)
 		"Options:\n"
 		" -h   Show this help message and exit\n"
 		" -v   Show the funlisp version and exit\n"
-		" -x   When file is specified, load it and run REPL rather than main"
+		" -x   When file is specified, load it and run REPL rather than main\n"
+		" -T   Disable sTring caching\n"
+		" -Y   Disable sYmbol caching"
 	);
 	return 0;
 }
@@ -197,13 +212,19 @@ int main(int argc, char **argv)
 {
 	int opt;
 	int file_repl = 0;
-	while ((opt = getopt(argc, argv, "hvx")) != -1) {
+	while ((opt = getopt(argc, argv, "hvxYT")) != -1) {
 		switch (opt) {
 		case 'x':
 			file_repl = 1;
 			break;
 		case 'v':
 			return version();
+			break;
+		case 'T':
+			disable_strcache = 1;
+			break;
+		case 'Y':
+			disable_symcache = 1;
 			break;
 		case 'h': /* fall through */
 		default:
