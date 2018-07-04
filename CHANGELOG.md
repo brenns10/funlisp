@@ -28,6 +28,9 @@ will be made on patch versions.
 - Added `lisp_version`, a string containing the funlisp version.
 - Added support for a `macro` builtin, which is identical to `lambda`, but
   instead returns code which should be evaluated.
+- Symbols and strings may now be cached for better memory and runtime
+  performance. This done transparently, but must be enabled with
+  `lisp_enable_symcache()` and `lisp_enable_strcache()`.
 ### Changed
 - Parsing API is now flexible enough for public users. Removed `lisp_parse()`
   and added `lisp_parse_value()`, as well as `lisp_parse_progn()` and
