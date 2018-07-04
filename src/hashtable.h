@@ -98,6 +98,18 @@ int ht_remove_ptr(struct hashtable *table, void *key);
 void *ht_get(struct hashtable const *table, void *key);
 void *ht_get_ptr(struct hashtable const *table, void *key);
 /**
+ * @brief Return the key associated with the key provided.
+ * This may sound silly, but as long as @a key hashes and compares to the stored
+ * key, it may actually be different value. If you use the hash table as a
+ * set, you'll need a way to look up the pointer associated with the original
+ * key -- this is how you do it.
+ * @param table A pointer to the hash table.
+ * @param key The key to retrieve.
+ * @returns The original key associated the key, NULL if not found
+ */
+void *ht_get_key(struct hashtable const *table, void *key);
+void *ht_get_key_ptr(struct hashtable const *table, void *key);
+/**
  * @brief Return true when a key is contained in the table.
  * @param table A pointer to the hash table.
  * @param key The key to search for.

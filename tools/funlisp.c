@@ -122,6 +122,7 @@ int repl_run(void)
 {
 	lisp_runtime *rt = lisp_runtime_new();
 	lisp_scope *scope = lisp_new_default_scope(rt);
+	lisp_enable_symcache(rt);
 	repl_run_with_rt(rt, scope);
 	lisp_runtime_free(rt); /* implicitly sweeps everything */
 	return 0;
@@ -146,6 +147,7 @@ int file_run(char *name, int argc, char **argv, int repl)
 
 	rt = lisp_runtime_new();
 	scope = lisp_new_default_scope(rt);
+	lisp_enable_symcache(rt);
 
 	if (!lisp_load_file(rt, scope, file)) {
 		fclose(file);

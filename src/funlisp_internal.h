@@ -183,7 +183,6 @@ int lisp_is_bad_list_of_lists(lisp_list *l);
 unsigned int lisp_text_hash(void *t);
 int lisp_text_compare(void *left, void *right);
 
-struct hashtable *lisp_textcache_create(void);
 void lisp_textcache_remove(struct hashtable *cache, struct lisp_text *t);
 
 #endif

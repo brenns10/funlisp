@@ -5,6 +5,7 @@
  */
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "funlisp_internal.h"
 
@@ -13,7 +14,7 @@ static struct lisp_text *lisp_textcache_lookup(struct hashtable *cache,
 {
 	struct lisp_text text;
 	text.s = str;
-	return ht_get_ptr(cache, &text);
+	return ht_get_key_ptr(cache, &text);
 }
 
 static void lisp_textcache_save(struct hashtable *cache, struct lisp_text *t)
@@ -23,7 +24,16 @@ static void lisp_textcache_save(struct hashtable *cache, struct lisp_text *t)
 
 void lisp_textcache_remove(struct hashtable *cache, struct lisp_text *t)
 {
-	ht_remove(cache, t);
+	struct lisp_text *existing;
+	existing = ht_get_key_ptr(cache, t);
+	if (existing == t) {
+		/*
+		 * The same text object may exist multiple times, and only some
+		 * could be cached. We only care if this is the same pointer
+		 * value.
+		 */
+		ht_remove_ptr(cache, t);
+	}
 }
 
 struct hashtable *lisp_textcache_create(void)
@@ -89,4 +99,25 @@ lisp_string *lisp_string_new(lisp_runtime *rt, char *str, int flags)
 lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *sym, int flags)
 {
 	return (lisp_symbol*) lisp_text_new(rt, type_symbol, rt->symcache, sym, flags);
+}
+
+void lisp_enable_strcache(lisp_runtime *rt)
+{
+	rt->strcache = lisp_textcache_create();
+}
+
+void lisp_enable_symcache(lisp_runtime *rt)
+{
+	rt->symcache = lisp_textcache_create();
+}
+void lisp_disable_strcache(lisp_runtime *rt)
+{
+	ht_delete(rt->strcache);
+	rt->strcache = NULL;
+}
+
+void lisp_disable_symcache(lisp_runtime *rt)
+{
+	ht_delete(rt->symcache);
+	rt->symcache = NULL;
 }

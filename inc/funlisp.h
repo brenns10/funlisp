@@ -59,6 +59,40 @@ void *lisp_runtime_get_ctx(lisp_runtime *rt);
  */
 void lisp_runtime_free(lisp_runtime *rt);
 
+/**
+ * Enable runtime support for caching strings.
+ *
+ * When string caching is enabled, strings created with lisp_string_new() will
+ * be looked up from a cache first, and if they already exist, a cached object
+ * will be returned. This reduces the number of unique objects and memory
+ * objects, which both improves memory utilization and garbage collection times.
+ * @param rt runtime to enable string caching on
+ */
+void lisp_enable_strcache(lisp_runtime *rt);
+
+/**
+ * Enable runtime support for caching symbols.
+ *
+ * When symbol caching is enabled, symbols created with lisp_symbol_new() will
+ * be looked up from a cache first, and if they already exist, a cached object
+ * will be returned. This reduces the number of unique objects and memory
+ * objects, which both improves memory utilization and garbage collection times.
+ * @param rt runtime to enable symbol caching on
+ */
+void lisp_enable_symcache(lisp_runtime *rt);
+
+/**
+ * Disable string caching.
+ * @param rt runtime to disable caching
+ */
+void lisp_disable_strcache(lisp_runtime *rt);
+
+/**
+ * Disable symbol caching.
+ * @param rt runtime to disable caching
+ */
+void lisp_disable_symcache(lisp_runtime *rt);
+
 /** @} */
 
 /*

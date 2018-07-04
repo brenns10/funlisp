@@ -180,8 +180,19 @@ unsigned int ht_find_retrieve(const struct hashtable *obj, void *key)
 	 * until (cell.mark == empty || cell.key == key)
 	 * while (cell.mark != empty && cell.key != key)
 	 */
-	while (mark_at(obj, index) != HT_EMPTY &&
-	       obj->equal(key, key_ptr(obj, index)) != 0) {
+	while (mark_at(obj, index) != HT_EMPTY) {
+		/*
+		 * When retrieving, we continue whenever we encounter HT_GRAVE,
+		 * since items may have been deleted after key was inserted.
+		 *
+		 * But we MUST NOT interact with any data there, since the
+		 * caller expects that we are done with it. It is DEAD DATA to
+		 * us.
+		 */
+		if (mark_at(obj, index) == HT_FULL &&
+				obj->equal(key, key_ptr(obj, index)) == 0) {
+			return index;
+		}
 		/*
 		 * This is quadratic probing, but I'm avoiding squaring numbers:
 		 * j:     1, 3, 5, 7,  9, 11, ..
@@ -351,6 +362,25 @@ void *ht_get_ptr(struct hashtable const *table, void *key)
 	if (!result) {
 		return NULL;
 	}
+	return *result;
+}
+
+void *ht_get_key(struct hashtable const *table, void *key)
+{
+	unsigned long index = ht_find_retrieve(table, key);
+
+	/* If the slot is not marked full, we didn't find the key. */
+	if (mark_at(table, index) != HT_FULL)
+		return NULL;
+
+	return key_ptr(table, index);
+}
+
+void *ht_get_key_ptr(struct hashtable const *table, void *key)
+{
+	void **result = ht_get_key(table, &key);
+	if (!result)
+		return NULL;
 	return *result;
 }
 
