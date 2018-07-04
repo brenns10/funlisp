@@ -178,6 +178,7 @@ static result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 static result lisp_parse_symbol(lisp_runtime *rt, char *input, int index)
 {
 	int n = 0;
+	char *copy;
 	lisp_symbol *s;
 
 	while (input[index + n] && !isspace(input[index + n]) &&
@@ -189,11 +190,12 @@ static result lisp_parse_symbol(lisp_runtime *rt, char *input, int index)
 		rt->error = "unexpected eof while parsing symbol";
 		return_result_err(NULL, index, LE_EOF);
 	}
-	s = (lisp_symbol*)lisp_new(rt, type_symbol);
-	s->s = malloc(n + 1);
-	strncpy(s->s, input + index, n);
-	s->can_free = 1; /* interpreter owns symbol */
-	s->s[n] = '\0';
+	copy = malloc(n + 1);
+	strncpy(copy, input + index, n);
+	copy[n] = '\0';
+	/* use lisp_symbol_new(), ensuring that we use the symbol cache if it
+	 * exists */
+	s = lisp_symbol_new(rt, copy, LS_OWN);
 	return_result(s, index + n);
 }
 

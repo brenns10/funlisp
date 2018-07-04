@@ -79,6 +79,11 @@ struct lisp_runtime {
 	/* Maintain a stack as we go, can dump it at any time if we want. */
 	lisp_list *stack;
 	unsigned int stack_depth;
+
+	/* Maintain cache of lisp_symbol */
+	struct hashtable *symcache;
+	/* Maintain cache of lisp_string */
+	struct hashtable *strcache;
 };
 
 /* The below ARE lisp_values! */
@@ -102,8 +107,8 @@ struct lisp_type {
 	LISP_VALUE_HEAD;
 	const char *name;
 	void (*print)(FILE *f, lisp_value *value);
-	lisp_value * (*new)(void);
-	void (*free)(void *value);
+	lisp_value * (*new)(lisp_runtime *rt);
+	void (*free)(lisp_runtime *rt, void *value);
 	struct iterator (*expand)(lisp_value*);
 	lisp_value * (*eval)(lisp_runtime *rt, lisp_scope *scope, lisp_value *value);
 	lisp_value * (*call)(lisp_runtime *rt, lisp_scope *scope, lisp_value *callable, lisp_list *arg);
@@ -165,7 +170,7 @@ void lisp_init(lisp_runtime *rt);
 void lisp_destroy(lisp_runtime *rt);
 
 /* Shortcuts for type operations. */
-void lisp_free(lisp_value *value);
+void lisp_free(lisp_runtime *rt, lisp_value *value);
 lisp_value *lisp_new(lisp_runtime *rt, lisp_type *typ);
 
 lisp_list *lisp_quote_with(lisp_runtime *rt, lisp_value *value, char *sym);
@@ -174,5 +179,11 @@ enum lisp_errno lisp_sym_to_errno(lisp_symbol *sym);
 
 int lisp_is_bad_list(lisp_list *l);
 int lisp_is_bad_list_of_lists(lisp_list *l);
+
+unsigned int lisp_text_hash(void *t);
+int lisp_text_compare(void *left, void *right);
+
+struct hashtable *lisp_textcache_create(void);
+void lisp_textcache_remove(struct hashtable *cache, struct lisp_text *t);
 
 #endif

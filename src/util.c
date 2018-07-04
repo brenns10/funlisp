@@ -311,38 +311,9 @@ lisp_value *lisp_nil_new(lisp_runtime *rt)
 	return rt->nil;
 }
 
-static char *my_strdup(char *s)
-{
-	int len = strlen(s);
-	char *new = malloc(len + 1);
-	strncpy(new, s, len);
-	new[len] = '\0';
-	return new;
-}
-
-static struct lisp_text *lisp_text_new(lisp_runtime *rt, lisp_type *tp, char *str, int flags)
-{
-	lisp_string *string = (lisp_string *) lisp_new(rt, tp);
-	if (flags & LS_CPY)
-		str = my_strdup(str);
-	string->s = str;
-	string->can_free = flags & LS_OWN;
-	return string;
-}
-
-lisp_string *lisp_string_new(lisp_runtime *rt, char *str, int flags)
-{
-	return (lisp_string*) lisp_text_new(rt, type_string, str, flags);
-}
-
 char *lisp_string_get(lisp_string *s)
 {
 	return s->s;
-}
-
-lisp_symbol *lisp_symbol_new(lisp_runtime *rt, char *sym, int flags)
-{
-	return (lisp_symbol*) lisp_text_new(rt, type_symbol, sym, flags);
 }
 
 char *lisp_symbol_get(lisp_symbol *sym)

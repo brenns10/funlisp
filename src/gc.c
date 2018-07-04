@@ -9,7 +9,7 @@
 
 void lisp_init(lisp_runtime *rt)
 {
-	rt->nil = type_list->new();
+	rt->nil = type_list->new(rt);
 	rt->nil->mark = 0;
 	rt->nil->type = type_list;
 	rt->nil->next = NULL;
@@ -22,6 +22,8 @@ void lisp_init(lisp_runtime *rt)
 	rt->error_stack = NULL;
 	rt->stack = (lisp_list *) rt->nil;
 	rt->stack_depth = 0;
+	rt->symcache = NULL;
+	rt->strcache = NULL;
 }
 
 void lisp_destroy(lisp_runtime *rt)
@@ -29,7 +31,11 @@ void lisp_destroy(lisp_runtime *rt)
 	rt->has_marked = 0; /* ensure we sweep all */
 	lisp_sweep(rt);
 	rb_destroy(&rt->rb);
-	lisp_free(rt->nil);
+	lisp_free(rt, rt->nil);
+	if (rt->symcache)
+		ht_delete(rt->symcache);
+	if (rt->strcache)
+		ht_delete(rt->strcache);
 }
 
 void lisp_mark(lisp_runtime *rt, lisp_value *v)
@@ -92,7 +98,7 @@ void lisp_sweep(lisp_runtime *rt)
 	while (curr->next) {
 		if (curr->next->mark != GC_MARKED) {
 			lisp_value *tmp = curr->next->next;
-			lisp_free(curr->next);
+			lisp_free(rt, curr->next);
 			curr->next = tmp;
 		} else {
 			curr->mark = GC_NOMARK;

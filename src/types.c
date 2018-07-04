@@ -45,6 +45,12 @@ static lisp_value *call_error(lisp_runtime *rt, lisp_scope *s, lisp_value *c,
 	return lisp_error(rt, LE_NOCALL, "not callable!");
 }
 
+static void simple_free(lisp_runtime *rt, void *v)
+{
+	(void)rt;
+	free(v);
+}
+
 static bool has_next_index_lt_state(struct iterator *iter)
 {
 	return iter->index < iter->state_int;
@@ -55,7 +61,7 @@ static bool has_next_index_lt_state(struct iterator *iter)
  */
 
 static void type_print(FILE *f, lisp_value *v);
-static lisp_value *type_new(void);
+static lisp_value *type_new(lisp_runtime *rt);
 static int type_compare(lisp_value *self, lisp_value *other);
 
 static lisp_type type_type_obj = {
@@ -63,7 +69,7 @@ static lisp_type type_type_obj = {
 	/* name */ "type",
 	/* print */ type_print,
 	/* new */ type_new,
-	/* free */ free,
+	/* free */ simple_free,
 	/* expand */ iterator_empty,
 	/* eval */ eval_error,
 	/* call */ call_error,
@@ -77,9 +83,12 @@ static void type_print(FILE *f, lisp_value *v)
 	fprintf(f, "%s", value->name);
 }
 
-static lisp_value *type_new(void)
+static lisp_value *type_new(lisp_runtime *rt)
 {
-	lisp_type *type = malloc(sizeof(lisp_type));
+	lisp_type *type;
+	(void) rt; /* unused */
+
+	type =  malloc(sizeof(lisp_type));
 	return (lisp_value*)type;
 }
 
@@ -97,8 +106,8 @@ static int type_compare(lisp_value *self, lisp_value *other)
  */
 
 static void scope_print(FILE *f, lisp_value*v);
-static lisp_value *scope_new(void);
-static void scope_free(void *v);
+static lisp_value *scope_new(lisp_runtime *rt);
+static void scope_free(lisp_runtime *rt, void *v);
 static struct iterator scope_expand(lisp_value *);
 static int scope_compare(lisp_value *self, lisp_value *other);
 
@@ -115,30 +124,36 @@ static lisp_type type_scope_obj = {
 };
 lisp_type *type_scope = &type_scope_obj;
 
-static unsigned int symbol_hash(void *symbol)
+unsigned int lisp_text_hash(void *t)
 {
-	lisp_symbol **sym = symbol;
-	return ht_string_hash(&(*sym)->s);
+	struct lisp_text **text = t;
+	return ht_string_hash(&(*text)->s);
 }
 
-static int symbol_compare(void *left, void *right)
+int lisp_text_compare(void *left, void *right)
 {
 	lisp_symbol **sym1 = left;
 	lisp_symbol **sym2 = right;
 	return strcmp((*sym1)->s, (*sym2)->s);
 }
 
-static lisp_value *scope_new(void)
+static lisp_value *scope_new(lisp_runtime *rt)
 {
-	lisp_scope *scope = malloc(sizeof(lisp_scope));
+	lisp_scope *scope;
+	(void) rt; /* unused */
+
+	scope = malloc(sizeof(lisp_scope));
 	scope->up = NULL;
-	ht_init(&scope->scope, symbol_hash, symbol_compare, sizeof(void*), sizeof(void*));
+	ht_init(&scope->scope, lisp_text_hash, lisp_text_compare, sizeof(void*), sizeof(void*));
 	return (lisp_value*)scope;
 }
 
-static void scope_free(void *v)
+static void scope_free(lisp_runtime *rt, void *v)
 {
-	lisp_scope *scope = (lisp_scope*) v;
+	lisp_scope *scope;
+	(void) rt; /* unused */
+
+	scope = (lisp_scope*) v;
 	ht_destroy(&scope->scope);
 	free(scope);
 }
@@ -234,7 +249,7 @@ static int scope_compare(lisp_value *self, lisp_value *other)
  */
 
 static void list_print(FILE *f, lisp_value *v);
-static lisp_value *list_new(void);
+static lisp_value *list_new(lisp_runtime *rt);
 static lisp_value *list_eval(lisp_runtime*, lisp_scope*, lisp_value*);
 static struct iterator list_expand(lisp_value*);
 static int list_compare(lisp_value *self, lisp_value *other);
@@ -244,7 +259,7 @@ static lisp_type type_list_obj = {
 	/* name */ "list",
 	/* print */ list_print,
 	/* new */ list_new,
-	/* free */ free,
+	/* free */ simple_free,
 	/* expand */ list_expand,
 	/* eval */ list_eval,
 	/* call */ call_error,
@@ -292,9 +307,12 @@ static void list_print(FILE *f, lisp_value *v)
 	fprintf(f, ")");
 }
 
-static lisp_value *list_new(void)
+static lisp_value *list_new(lisp_runtime *rt)
 {
-	lisp_list *list = malloc(sizeof(lisp_list));
+	lisp_list *list;
+	(void) rt; /* unused */
+
+	list = malloc(sizeof(lisp_list));
 	list->left = NULL;
 	list->right = NULL;
 	return (lisp_value*) list;
@@ -365,9 +383,9 @@ static int list_compare(lisp_value *self, lisp_value *other)
  */
 
 static void text_print(FILE *f, lisp_value *v);
-static lisp_value *text_new(void);
+static lisp_value *text_new(lisp_runtime *rt);
 static lisp_value *symbol_eval(lisp_runtime*, lisp_scope*, lisp_value*);
-static void text_free(void *v);
+static void text_free(lisp_runtime *rt, void *v);
 static int text_compare(lisp_value *self, lisp_value *other);
 
 static lisp_type type_symbol_obj = {
@@ -389,17 +407,26 @@ static void text_print(FILE *f, lisp_value *v)
 	fprintf(f, "%s", text->s);
 }
 
-static lisp_value *text_new(void)
+static lisp_value *text_new(lisp_runtime *rt)
 {
-	struct lisp_text *text = malloc(sizeof(struct lisp_text));
+	struct lisp_text *text;
+	(void) rt; /* unused */
+
+	text = malloc(sizeof(struct lisp_text));
 	text->s = NULL;
 	text->can_free = 1;
 	return (lisp_value*)text;
 }
 
-static void text_free(void *v)
+static void text_free(lisp_runtime *rt, void *v)
 {
 	struct lisp_text *text = (struct lisp_text*) v;
+	/* if this is cached, we must un-cache it! */
+	if (text->type == type_string && rt->strcache)
+		lisp_textcache_remove(rt->strcache, text);
+	else if (text->type == type_symbol && rt->symcache)
+		lisp_textcache_remove(rt->symcache, text);
+	/* respect ownership of text */
 	if (text->can_free)
 		free(text->s);
 	free(text);
@@ -432,7 +459,7 @@ static int text_compare(lisp_value *self, lisp_value *other)
  */
 
 static void integer_print(FILE *f, lisp_value *v);
-static lisp_value *integer_new(void);
+static lisp_value *integer_new(lisp_runtime *rt);
 static int integer_compare(lisp_value *self, lisp_value *other);
 
 static lisp_type type_integer_obj = {
@@ -440,7 +467,7 @@ static lisp_type type_integer_obj = {
 	/* name */ "integer",
 	/* print */ integer_print,
 	/* new */ integer_new,
-	/* free */ free,
+	/* free */ simple_free,
 	/* expand */ iterator_empty,
 	/* eval */ eval_same,
 	/* call */ call_error,
@@ -454,9 +481,12 @@ static void integer_print(FILE *f, lisp_value *v)
 	fprintf(f, "%d", integer->x);
 }
 
-static lisp_value *integer_new(void)
+static lisp_value *integer_new(lisp_runtime *rt)
 {
-	lisp_integer *integer = malloc(sizeof(lisp_integer));
+	lisp_integer *integer;
+	(void) rt; /* unused */
+
+	integer = malloc(sizeof(lisp_integer));
 	integer->x = 0;
 	return (lisp_value*)integer;
 }
@@ -493,7 +523,7 @@ lisp_type *type_string = &type_string_obj;
  */
 
 static void builtin_print(FILE *f, lisp_value *v);
-static lisp_value *builtin_new(void);
+static lisp_value *builtin_new(lisp_runtime *rt);
 static lisp_value *builtin_call(lisp_runtime *rt, lisp_scope *scope,
                                 lisp_value *c, lisp_list *arguments);
 static int builtin_compare(lisp_value *self, lisp_value *other);
@@ -503,7 +533,7 @@ static lisp_type type_builtin_obj = {
 	/* name */ "builtin",
 	/* print */ builtin_print,
 	/* new */ builtin_new,
-	/* free */ free,
+	/* free */ simple_free,
 	/* expand */ iterator_empty,
 	/* eval */ eval_error,
 	/* call */ builtin_call,
@@ -517,9 +547,12 @@ static void builtin_print(FILE *f, lisp_value *v)
 	fprintf(f, "<builtin function %s>", builtin->name);
 }
 
-static lisp_value *builtin_new()
+static lisp_value *builtin_new(lisp_runtime *rt)
 {
-	lisp_builtin *builtin = malloc(sizeof(lisp_builtin));
+	lisp_builtin *builtin;
+	(void) rt; /* unused */
+
+	builtin = malloc(sizeof(lisp_builtin));
 	builtin->call = NULL;
 	builtin->name = NULL;
 	builtin->evald = 0;
@@ -563,7 +596,7 @@ static int builtin_compare(lisp_value *self, lisp_value *other)
  */
 
 static void lambda_print(FILE *f, lisp_value *v);
-static lisp_value *lambda_new(void);
+static lisp_value *lambda_new(lisp_runtime *rt);
 static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
                                lisp_value *c, lisp_list *arguments);
 static struct iterator lambda_expand(lisp_value *v);
@@ -574,7 +607,7 @@ static lisp_type type_lambda_obj = {
 	/* name */ "lambda",
 	/* print */ lambda_print,
 	/* new */ lambda_new,
-	/* free */ free,
+	/* free */ simple_free,
 	/* expand */ lambda_expand,
 	/* eval */ eval_error,
 	/* call */ lambda_call,
@@ -593,9 +626,12 @@ static void lambda_print(FILE *f, lisp_value *v)
 	}
 }
 
-static lisp_value *lambda_new()
+static lisp_value *lambda_new(lisp_runtime *rt)
 {
-	lisp_lambda *lambda = malloc(sizeof(lisp_lambda));
+	lisp_lambda *lambda;
+	(void) rt; /* unused */
+
+	lambda = malloc(sizeof(lisp_lambda));
 	lambda->args = NULL;
 	lambda->code = NULL;
 	lambda->closure = NULL;
@@ -706,9 +742,9 @@ void lisp_print(FILE *f, lisp_value *value)
 	value->type->print(f, value);
 }
 
-void lisp_free(lisp_value *value)
+void lisp_free(lisp_runtime *rt, lisp_value *value)
 {
-	value->type->free(value);
+	value->type->free(rt, value);
 }
 
 lisp_value *lisp_eval(lisp_runtime *rt, lisp_scope *scope, lisp_value *value)
@@ -735,7 +771,7 @@ lisp_value *lisp_call(lisp_runtime *rt, lisp_scope *scope,
 
 lisp_value *lisp_new(lisp_runtime *rt, lisp_type *typ)
 {
-	lisp_value *new = typ->new();
+	lisp_value *new = typ->new(rt);
 	new->type = typ;
 	new->next = NULL;
 	new->mark = GC_NOMARK;
