@@ -300,10 +300,10 @@ static char *read_file(FILE *input)
 {
 	size_t bufsize = 1024;
 	size_t length = 0;
-	char *buf = malloc(1024);
+	char *buf = malloc(bufsize);
 
 	while (!feof(input) && !ferror(input)) {
-		length += fread(buf, sizeof(char), bufsize - length, input);
+		length += fread(buf + length, sizeof(char), bufsize - length, input);
 		if (length >= bufsize) {
 			bufsize *= 2;
 			buf = realloc(buf, bufsize);
