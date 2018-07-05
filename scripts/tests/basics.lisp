@@ -32,4 +32,15 @@
 (assert (equal? (cons 'a 'b) '(a . b)))
 
 (assert-error 'LE_TYPE (define 5 5))
+
+(assert (equal? (cond (0 "hello") (1 "there") (0 "testing")) "there"))
+(assert (equal? (cond (1 "hello") (0 "there") (0 "testing")) "hello"))
+(assert (equal? (cond (0 "hello") (0 "there") (1 "testing")) "testing"))
+(assert (null? (cond (0 'nothing) (0 'to) (0 'eval) (0 'to) (0 'here))))
+
+(assert-error 'LE_SYNTAX (cond))
+(assert-error 'LE_SYNTAX (cond ()))
+(assert-error 'LE_SYNTAX (cond (a b c)))
+(assert-error 'LE_SYNTAX (cond 1))
+
 ; OUTPUT(0)

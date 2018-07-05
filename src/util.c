@@ -114,9 +114,8 @@ lisp_value *lisp_progn(lisp_runtime *rt, lisp_scope *scope, lisp_list *l)
 int lisp_list_length(lisp_list *list)
 {
 	int length = 0;
-	while (list->type == type_list && !lisp_nil_p((lisp_value*)list)) {
+	lisp_for_each(list) {
 		length++;
-		list = (lisp_list*)list->right;
 	}
 	return length;
 }
@@ -460,4 +459,9 @@ lisp_list *lisp_map(lisp_runtime *rt, lisp_scope *scope, void *user,
 	}
 	new_node->right = lisp_nil_new(rt);
 	return new_head;
+}
+
+int lisp_truthy(lisp_value *v)
+{
+	return v->type == type_integer && ((lisp_integer*)v)->x;
 }

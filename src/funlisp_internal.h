@@ -185,4 +185,5 @@ int lisp_text_compare(void *left, void *right);
 
 void lisp_textcache_remove(struct hashtable *cache, struct lisp_text *t);
 
+int lisp_truthy(lisp_value *v);
 #endif

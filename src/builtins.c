@@ -321,7 +321,7 @@ static lisp_value *lisp_builtin_if(lisp_runtime *rt, lisp_scope *scope,
 
 	condition = lisp_eval(rt, scope, condition);
 	lisp_error_check(condition);
-	if (condition->type == type_integer && ((lisp_integer*)condition)->x) {
+	if (lisp_truthy(condition)) {
 		return lisp_eval(rt, scope, body_true);
 	} else {
 		return lisp_eval(rt, scope, body_false);
@@ -650,6 +650,44 @@ static lisp_value *lisp_builtin_assert_error(
 	}
 }
 
+/*
+ * (cond
+ *    (TEST1 VALUE2)
+ *   [(TEST2 VALUE2) ...]
+ * )
+ */
+static lisp_value *lisp_builtin_cond(
+		lisp_runtime *rt, lisp_scope *scope, lisp_list *arglist, void *user)
+{
+	/* args NOT evaluated */
+	lisp_list *clause, *node;
+	lisp_value *expr, *value;
+	(void) user; /* unused */
+
+	if (lisp_nil_p((lisp_value*)arglist))
+		return lisp_error(rt, LE_SYNTAX, "bad syntax for cond");
+
+	lisp_for_each(arglist) {
+		if (arglist->left->type != type_list)
+			return lisp_error(rt, LE_SYNTAX, "bad syntax for cond");
+		clause = (lisp_list*) arglist->left;
+
+		if (lisp_is_bad_list(clause) || lisp_list_length(clause) != 2)
+			return lisp_error(rt, LE_SYNTAX, "bad syntax for cond");
+
+		expr = clause->left;
+		node = (lisp_list*) clause->right;
+		value = node->left;
+
+		expr = lisp_eval(rt, scope, expr);
+		lisp_error_check(expr);
+
+		if (lisp_truthy(expr))
+			return lisp_eval(rt, scope, value);
+	}
+	return lisp_nil_new(rt);
+}
+
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
 	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval, NULL, 1);
@@ -684,4 +722,5 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "equal?", lisp_builtin_equal, NULL, 1);
 	lisp_scope_add_builtin(rt, scope, "assert", lisp_builtin_assert, NULL, 1);
 	lisp_scope_add_builtin(rt, scope, "assert-error", lisp_builtin_assert_error, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "cond", lisp_builtin_cond, NULL, 0);
 }
