@@ -17,15 +17,17 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <editline/readline.h>
+#include <histedit.h>
 
 #include "funlisp.h"
 
 int disable_symcache = 0;
 int disable_strcache = 0;
+int line_continue = 0;
+extern char **environ;
 
 /**
- * Return a complete line of input from the command line, using libedit.
+ * Return a complete line of input from the command line, given an EditLine.
  *
  * This function allows the user to compose a multi-line expression (or series
  * of expressions), only returning once the input is complete. It reads lines,
@@ -36,44 +38,40 @@ int disable_strcache = 0;
  * @return a fully parsed progn containing maybe an arg
  * @retval NULL on error - use lisp_get_errno() to test the error code
  */
-static lisp_value *repl_parse_single_input(lisp_runtime *rt)
+static lisp_value *repl_parse_single_input(lisp_runtime *rt, EditLine *el, History *hist)
 {
 	char *input = NULL;
-	char *line, *tmp;
+	char *line;
 	int input_len = 0;
 	int line_len;
 	lisp_value *rv;
+	HistEvent ev;
+
+	line_continue = 0;
 
 	for (;;) {
-		line = readline(input ? "  " : "> ");
-		if (!line) {
+		line = (char*)el_gets(el, &line_len);
+		if (line_len <= 0) { /* 0 is EOF, -1 error */
 			if (input) free(input);
 			return lisp_error(rt, LE_EXIT, "");
 		}
 
-		add_history(line);
-		line_len = strlen(line);
-
 		if (!input) {
 			/* first time, our input is just the line */
-			input = line;
+			input = malloc(line_len + 1);
+			strncpy(input, line, line_len + 1);
 			input_len = line_len;
 		} else {
 			/* second time, combine previous input with line */
-			tmp = malloc(line_len + input_len + 2);
-			tmp[0] = '\0';
-			strncat(tmp, input, input_len + 1);
-			strncat(tmp, "\n", 2);
-			strncat(tmp, line, line_len + 1);
-			free(input);
-			free(line);
-			input = tmp;
-			input_len = input_len + line_len + 1;
+			input = realloc(input, input_len + line_len + 1);
+			strncat(input, line, line_len);
+			input_len += line_len;
 		}
 
 		rv = lisp_parse_progn(rt, input);
 		if (rv) {
 			/* complete input! */
+			history(hist, &ev, H_ENTER, input);
 			free(input);
 			return rv;
 		} else if (lisp_get_errno(rt) != LE_EOF) {
@@ -81,15 +79,77 @@ static lisp_value *repl_parse_single_input(lisp_runtime *rt)
 			free(input);
 			return NULL;
 		}
+		/* otherwise, partial line (EOF not expected) */
+		line_continue = 1;
 	}
 }
 
+/*
+ * Prompt function - needs to be different for line continuation.
+ */
+char *repl_prompt(EditLine *e)
+{
+	(void)e;
+	if (line_continue)
+		return "...> ";
+	else
+		return "fun> ";
+}
+
+/*
+ * Return the filename $HOME/.funlisp_history.
+ * Free it when you're done.
+ */
+char *repl_historyfile(void)
+{
+	const char *varname = "HOME=";
+	const char *basename = ".funlisp_history";
+	char *retbuf;
+	int varlen = strlen(varname);
+	int baselen = strlen(basename);
+	int vallen, i;
+
+	for (i = 0; environ[i]; i++)
+		if (strncmp(varname, environ[i], varlen) == 0)
+			break;
+
+	if (!environ[i]) {
+		fprintf(stderr, "Unable to find HOME variable\n");
+		exit(1);
+	}
+
+	vallen = strlen(&environ[i][varlen]);
+	retbuf = malloc(vallen + baselen + 2);
+	strncpy(retbuf, &environ[i][varlen], vallen + 1);
+	if (retbuf[vallen-1] != '/') {
+		strncat(retbuf, "/", 2);
+	}
+	strncat(retbuf, basename, baselen);
+
+	return retbuf;
+}
+
+/*
+ * Run a REPL given an already existing lisp_runtime, in case you want to drop
+ * into a repl after something else finished running.
+ */
 void repl_run_with_rt(lisp_runtime *rt, lisp_scope *scope)
 {
+	HistEvent ev;
+	EditLine *el = el_init("funlisp", stdin, stdout, stderr);
+	History *hist = history_init();
+	char *histfile = repl_historyfile();
+
+	history(hist, &ev, H_SETSIZE, 1000);
+	history(hist, &ev, H_LOAD, histfile);
+	el_set(el, EL_PROMPT, repl_prompt);
+	el_set(el, EL_EDITOR, "emacs");
+	el_set(el, EL_HIST, history, hist);
+
 	for (;;) {
 		lisp_value *parsed_value, *result;
 
-		parsed_value = repl_parse_single_input(rt);
+		parsed_value = repl_parse_single_input(rt, el, hist);
 		if (!parsed_value && lisp_get_errno(rt) == LE_EXIT) {
 			/* Ctrl-D */
 			break;
@@ -116,6 +176,10 @@ void repl_run_with_rt(lisp_runtime *rt, lisp_scope *scope)
 		lisp_mark(rt, (lisp_value*)scope);
 		lisp_sweep(rt);
 	}
+	history(hist, &ev, H_SAVE, histfile);
+	history_end(hist);
+	free(histfile);
+	el_end(el);
 }
 
 /**
