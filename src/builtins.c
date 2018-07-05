@@ -688,6 +688,17 @@ static lisp_value *lisp_builtin_cond(
 	return lisp_nil_new(rt);
 }
 
+static lisp_value *lisp_builtin_list(
+		lisp_runtime *rt, lisp_scope *scope, lisp_list *arglist, void *user)
+{
+	/* args are evaluated */
+	(void) rt;
+	(void) scope;
+	(void) user;
+	return (lisp_value*)arglist;
+}
+
+
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
 	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval, NULL, 1);
@@ -723,4 +734,5 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "assert", lisp_builtin_assert, NULL, 1);
 	lisp_scope_add_builtin(rt, scope, "assert-error", lisp_builtin_assert_error, NULL, 0);
 	lisp_scope_add_builtin(rt, scope, "cond", lisp_builtin_cond, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "list", lisp_builtin_list, NULL, 1);
 }

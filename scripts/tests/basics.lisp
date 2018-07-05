@@ -43,4 +43,7 @@
 (assert-error 'LE_SYNTAX (cond (a b c)))
 (assert-error 'LE_SYNTAX (cond 1))
 
+(assert (equal? (list 1 (+ 1 1) (/ 9 3) (* 2 2)) '(1 2 3 4)))
+(assert (equal? (list 1 2 list 4) `(1 2 ,list 4)))
+
 ; OUTPUT(0)
