@@ -1,7 +1,15 @@
 Installation
 ============
 
-You may install from a Git repo checkout, or from a source tarball.
+First, configure your installation. `Makefile.conf` contains several important
+variables used by the Makefile for building and installing funlisp. The default
+one is very cross-platform compatible, but you may want more options enabled
+(e.g. for development).
+
+You may install from a Git repo checkout, or from a source tarball. The source
+tarball contains pre-built documentation (HTML and manual pages), and thus has
+no dependencies other than standard Make and compiler utilities. The git
+checkout requires additional tools to be installed, but is smaller.
 
 From Git
 --------

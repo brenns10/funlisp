@@ -93,6 +93,8 @@ clean_doc:
 # --transform argument ensures that when the tarball is extracted, all files are
 # within a subdirectory.
 package: FORCE clean doc
+	# first, ensure that we're packaging the proper Makefile.conf
+	cp Makefile.conf.dist Makefile.conf
 	tar --transform='s/^/funlisp-$(VERSION)\//' -cvf funlisp-$(VERSION).tar.gz \
 		LICENSE.txt README.md INSTALL.md CHANGELOG.md \
 		Makefile Makefile.conf Makefile.conf.dev Makefile.dep \
