@@ -9,7 +9,7 @@ project will use [Semantic Versioning](https://semver.org) for non-beta releases
 changes may be made on minor version bumps, and feature additions / bug-fixes
 will be made on patch versions.
 
-## [Unreleased]
+## [1.1.0] - 2018-08-22
 
 ### Added
 - Added `lisp_list_append()` and `lisp_list_set_{left|right}` for mutating and
