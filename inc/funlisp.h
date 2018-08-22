@@ -401,11 +401,55 @@ int lisp_list_length(lisp_list *list);
 lisp_value *lisp_list_get_left(lisp_list *l);
 
 /**
+ * Set the left item of a list node.
+ * @warning Lisp lists are not mutable! This should only be used during
+ * construction of lists.
+ * @param l list node to set
+ * @param left item to set the left pointer to
+ */
+void lisp_list_set_left(lisp_list *l, lisp_value *left);
+
+/**
  * Retrieve the right item of a list node / sexp
  * @param l list to retrieve from
  * @return right item of list node
  */
 lisp_value *lisp_list_get_right(lisp_list *l);
+
+/**
+ * Set the right item of a list node.
+ * @warning Lisp lists are not mutable! This should only be used during
+ * construction of lists.
+ * @param l list node to set
+ * @param right item to set the right pointer to
+ */
+void lisp_list_set_right(lisp_list *l, lisp_value *right);
+
+/**
+ * Append @a itemto the end of a list. This routine accepts double pointers to
+ * the head and tail of a list, so that it can update them if they change.
+ *
+ * To create a list, you can append onto ``nil``. After that, you may continue
+ * appending onto the list. Here is a complete example:
+ *
+ * @code
+ * lisp_list *head, *tail;
+ * head = tail = lisp_nil_new(rt);
+ * lisp_list_append(rt, &head, &tail, (lisp_value*) lisp_integer_new(rt, 1));
+ * lisp_list_append(rt, &head, &tail, (lisp_value*) lisp_integer_new(rt, 2));
+ * lisp_list_append(rt, &head, &tail, (lisp_value*) lisp_integer_new(rt, 3));
+ * lisp_print(stdout, (lisp_value*) head);
+ * // prints (1 2 3 )
+ * @endcode
+ *
+ * @param rt runtime
+ * @param head double pointer to the first item in the list (or nil, if
+ * appending to an empty list)
+ * @param tail double pointer to the last non-nil item in the list (or nil, if
+ * appending to an empty list)
+ * @param item the value to append
+ */
+void lisp_list_append(lisp_runtime *rt, lisp_list **head, lisp_list **tail, lisp_value *item);
 
 /**
  * Return a nil instance. Nil is simply a "special" ::lisp_list, with left and

@@ -307,6 +307,49 @@ be registered multiple times as multiple Funlisp functions. It also allows the C
 function to access additional context, which it may not have been able to get
 through the context object attached to the runtime.
 
+Building Lists
+--------------
+
+Many parts of the funlisp API require constructing lists. As has been mentioned
+earlier, funlisp "list" types are singly linked lists. Each node's ``left``
+pointer points to the data contained by the node, and the ``right`` pointer
+points to the next node in the list. ``nil``, returned by
+:c:func:`lisp_nil_new()`, is the empty list, and every list is terminated by it.
+
+You have several options available to you for constructing lists. First is
+:c:func:`lisp_list_new()`, which allows you to create a new list given a left
+and a right pointer. This may be used for constructing single list nodes. It may
+also be used to construct a list in reverse, starting with the last node and
+continuing to the first one.  You may also directly set the left and right
+pointer of a list node, using :c:func:`lisp_list_set_left()` and
+:c:func:`lisp_list_set_right()` respectively.
+
+.. warning::
+
+   Note that lisp lists are not mutable. In Lisp, any modification to list
+   results in a new one. Thus, you should never modify list nodes, unless you
+   have just created them yourself and are constructing a full list.
+
+   Also note that lisp lists' ``left`` and ``right`` pointers should never
+   contain ``null`` -- this will certainly cause a segmentation fault when they
+   are used. However, you can set these pointers to ``null`` during the
+   construction of a list, so long as the end result is a valid list with no
+   nulls.
+
+The simplest option is :c:func:`lisp_list_append()`. This function allows you to
+construct a list forwards (rather than reverse). It requires double pointers to
+the head and tail of the list (where tail is the last non-nil item in the list).
+See the generated documentation for full information, but below is a fully
+working example of using it:
+
+.. literalinclude:: ../tools/example_list_append.c
+  :language: C
+
+Finally, there are a few specialized options for constructing lists.
+:c:func:`lisp_singleton_list()` allows you to construct a list with one item.
+:c:func:`lisp_list_of_strings()` is useful for converting the argv and argc of a
+C main function into program arguments for a funlisp program.
+
 Advanced Topics
 ---------------
 

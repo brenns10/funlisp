@@ -338,6 +338,28 @@ lisp_value *lisp_list_get_right(lisp_list *l)
 	return l->right;
 }
 
+void lisp_list_set_left(lisp_list *l, lisp_value *left)
+{
+	l->left = left;
+}
+
+void lisp_list_set_right(lisp_list *l, lisp_value *right)
+{
+	l->right = right;
+}
+
+void lisp_list_append(lisp_runtime *rt, lisp_list **head, lisp_list **tail, lisp_value *item)
+{
+	if (lisp_nil_p((lisp_value*) *head)) {
+		*head = lisp_list_new(rt, item, (lisp_value*) *head);
+		*tail = *head;
+	} else {
+		(*tail)->right = (lisp_value*)lisp_list_new(
+				rt, item, lisp_nil_new(rt));
+		*tail = (lisp_list*) (*tail)->right;
+	}
+}
+
 lisp_integer *lisp_integer_new(lisp_runtime *rt, int n)
 {
 	lisp_integer *integer = (lisp_integer *) lisp_new(rt, type_integer);
