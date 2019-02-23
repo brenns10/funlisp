@@ -4,6 +4,10 @@
           `(1 2 3 ,x)
           '(1 2 3 4)))
 
+(assert (equal?
+          `(1 2 3 ,(+ 2 2))
+          '(1 2 3 4)))
+
 ; errors occurring in quasiquote are errors in real life
 (assert-error 'LE_VALUE
               `(blah (blah blah) ,(/ 1 0) (blah)))
