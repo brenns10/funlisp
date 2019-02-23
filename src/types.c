@@ -648,8 +648,14 @@ static lisp_value *lambda_call(lisp_runtime *rt, lisp_scope *scope,
 	lisp_scope *inner;
 	lisp_value *result;
 
-	argvalues = lisp_eval_list(rt, scope, arguments);
-	lisp_error_check(argvalues);
+	if (lambda->lambda_type == TP_MACRO) {
+		/* macros receive their arguments un-evaluated */
+		argvalues = arguments;
+	} else {
+		/* lambdas evaluate their arguments */
+		argvalues = lisp_eval_list(rt, scope, arguments);
+		lisp_error_check(argvalues);
+	}
 
 	if (lisp_is_bad_list(argvalues)) {
 		return lisp_error(rt, LE_SYNTAX, "unexpected cons cell");
