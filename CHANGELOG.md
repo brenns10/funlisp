@@ -4,10 +4,15 @@ Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/). This
-project will use [Semantic Versioning](https://semver.org) for non-beta releases
-(that is, starting with 1.0.0). During the beta phase (right now) breaking
-changes may be made on minor version bumps, and feature additions / bug-fixes
-will be made on patch versions.
+project uses [Semantic Versioning](https://semver.org) in the following ways:
+
+- Before 1.0.0, there is no API or language stability - minor or patch releases
+  may break anything.
+- Since 1.0.0, the embedding API is stable and breaking changes must be made on
+  a major release. However, the language itself may go through extension and
+  breaking changes.
+- At some unknown X.0.0, the language and embedding API will both be subject to
+  SemVer.
 
 ## Unreleased
 ### Fixed
