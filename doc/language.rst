@@ -163,6 +163,39 @@ Since we try to make everything in funlisp into an expression, if statements
 must have both a "value if true" and a "value if false". You cannot leave out
 the else.
 
+Funlisp also has the ``cond`` statement, which allows you to test whether one of
+several conditions match. To test this out, we'll define some functions that use
+cond.
+
+.. code:: lisp
+
+  (define divisible
+    (lambda (number by)
+      (= number (* by (/ number by)))))
+
+  (define talk-about-numbers
+    (lambda (number)
+      (cond
+         ((divisible number 2) (print "The number " number " is even!"))
+         ((divisible number 3) (print "It may not be even, but " number " is divisible by 3!"))
+         (1 (print "The number " number " is odd, and not even divisible by 3.")))))
+
+Don't worry about the function stuff, we'll revisit it later. Next is an example
+using these functions in the interpreter.
+
+.. code::
+
+  > (talk-about-numbers 6)
+  The number 6 is even!
+  > (talk-about-numbers 5)
+  The number 5 is odd, and not even divisible by 3.
+  > (talk-about-numbers 9)
+  It may not be even, but 9 is divisible by 3!
+
+The cond statement can use "1" as a default truth condition. However, it need
+not have a default case - when cond falls through, it returns nil, the empty
+list.
+
 Funlisp doesn't currently have any form of iteration. However, it supports
 recursion, which is a very powerful way of iterating, and handling objects like
 lists.
@@ -207,6 +240,32 @@ list processing functions that do the following:
 - ``(car l)`` - return the first item in l
 - ``(cdr l)`` - return the elements after the first one in l
 
+Scoping
+-------
+
+Sometimes, you want to evaluate a value once, and save it for use multiple
+times. You can achieve this with ``let``. Let has the syntax ``(let BINDING-LIST
+expressions...)``. BINDING-LIST is a list of pairs, mapping a symbol to a value.
+Here's an example:
+
+.. code::
+
+  > (let ((x (+ 5 5)) (y (- x 2))) (+ x y))
+  18
+
+Here the binding list contains the pair ``(x (+ 5 5))``, mapping ``x`` to the
+evaluated value 10. The next binding, ``(y (- x 2))`` maps y to 8. Notice that
+the second binding may refer to the earlier one in the list. This can happen in
+reverse as well, if for example the first binding is a function:
+
+.. code::
+
+  > (let ((return1 (lambda () x)) (x 1)) (return1))
+  1
+
+This needlessly complicated piece of work shows that the lambda bound to
+``return1`` can access the name x, if it accesses it *after* x is bound.
+
 Higher Order Functions
 ----------------------
 
@@ -228,6 +287,55 @@ list in pairs:
 
   > (reduce + '(1 2 3))
   6
+
+Macros + Advanced Quoting
+-------------------------
+
+Funlisp provisionally supports some more powerful features of lisp: macros and
+quoting. Macros are similar to functions which take un-evaluated code
+(s-expressions), and return new code. Since code is represented as lists of
+symbols internally, it can be manipulated quite nicely with lisp code as well.
+The result is capable of defining syntatic shortcuts and other niceties. Here is
+an example that takes the common ``(define function-name (lambda (args) ...))``
+pattern and shortens it into a more convenient construct: ``(defun name (args)
+...)``.
+
+.. code:: lisp
+
+  (define defun (macro (name args code)
+    (list 'define name (list 'lambda args code))))
+
+This uses the ``(list)`` builtin which constructs a list from evaluated
+expressions. The first argument, ``name`` is a symbol representing the name of
+the function. It gets substituted after the ``define`` symbol. The remaining
+arguments are part of the lambda declaration and get substituted later. The
+result is a macro that you can use to define functions like this:
+
+.. code:: lisp
+
+  (defun +1 (n) (+ n 1))
+
+However, you can see that it would get a bit cumbersome to use the ``list``
+builtin everywhere, so a more advanced quoting system exists. In this
+"quasiquoting" system allows you to quote most of the data using a backtick, but
+"turn off" quoting for certain parts using a comma. Here is the same macro
+rewritten:
+
+.. code:: lisp
+
+  (define defun (macro (name args code)
+    `(define ,name (lambda ,args ,code))))
+
+You can see this is shorter and less error-prone. Simply write the code the way
+you'd like to see it, but use commas to substitute evaluated values.
+
+.. warning::
+
+  While macros are usually evaluated at compile/parse time, funlisp currently
+  evaluates them after the fact -- just before the code is about to be run.
+  Further, funlisp evaluates the macros *each time* they are used, rather than
+  once only. The result is that macros are slightly less efficient than one
+  might expect. But, you're not using funlisp for its efficiency, right?
 
 The End
 -------
