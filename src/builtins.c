@@ -698,6 +698,49 @@ static lisp_value *lisp_builtin_list(
 	return (lisp_value*)arglist;
 }
 
+static lisp_value *lisp_builtin_let(
+		lisp_runtime *rt, lisp_scope *scope, lisp_list *arglist, void *user)
+{
+	/*
+	 * args are NOT evaluated.
+	 * (let ((symbol binding)
+	 *       (symbol binding) ...)
+	 *   expression ...)
+	 *
+	 * This would be roughly equivalent to letrec* from, say, racket.
+	 */
+	lisp_list *binding_list, *expressions;
+	lisp_list *it;
+	lisp_symbol *sym;
+	lisp_value *binding;
+	lisp_scope *new_scope;
+
+	(void) user;
+
+	if (!lisp_get_args(rt, arglist, "lR", &binding_list, &expressions))
+		return NULL;
+
+	/*
+	 * It feels dirty to just create a scope and never clean it up, but rest
+	 * assured it will be garbage collected.
+	 */
+	new_scope = lisp_new_empty_scope(rt);
+	new_scope->up = scope;
+
+	it = binding_list;
+	lisp_for_each(it) {
+		if (!lisp_is(it->left, type_list))
+			return lisp_error(rt, LE_TYPE, "expected binding list");
+		if (!lisp_get_args(rt, (lisp_list*)it->left, "s*", &sym, &binding))
+			return NULL;
+		binding = lisp_eval(rt, new_scope, binding);
+		if (!binding)
+			return NULL;
+		lisp_scope_bind(new_scope, sym, binding);
+	}
+
+	return lisp_progn(rt, new_scope, expressions);
+}
 
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
@@ -735,4 +778,5 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "assert-error", lisp_builtin_assert_error, NULL, 0);
 	lisp_scope_add_builtin(rt, scope, "cond", lisp_builtin_cond, NULL, 0);
 	lisp_scope_add_builtin(rt, scope, "list", lisp_builtin_list, NULL, 1);
+	lisp_scope_add_builtin(rt, scope, "let", lisp_builtin_let, NULL, 0);
 }
