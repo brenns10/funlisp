@@ -15,6 +15,8 @@ project uses [Semantic Versioning](https://semver.org) in the following ways:
   SemVer.
 
 ## Unreleased
+### Added
+- `let` builtin
 ### Fixed
 - `macro` construct was incorrectly evaluating its arguments prior to execution.
   This change is breaking, but since it reflects major incorrect behavior, it
