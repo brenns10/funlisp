@@ -109,4 +109,7 @@ serve_doc: doc
 depend: FORCE
 	gcc $(CFLAGS) -MM src/*.c > Makefile.dep
 
+tags:
+	ctags src/*.c src/*.h inc/funlisp.h
+
 include Makefile.dep
