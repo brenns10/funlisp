@@ -6,7 +6,8 @@
 include Makefile.conf
 
 OBJS=src/builtins.o src/charbuf.o src/gc.o src/hashtable.o src/iter.o \
-     src/parse.o src/ringbuf.o src/types.o src/util.o src/textcache.o
+     src/parse.o src/ringbuf.o src/types.o src/util.o src/textcache.o \
+     src/module.o
 
 # https://semver.org
 VERSION=1.1.0

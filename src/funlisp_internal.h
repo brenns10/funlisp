@@ -193,4 +193,7 @@ int lisp_text_compare(void *left, void *right);
 void lisp_textcache_remove(struct hashtable *cache, struct lisp_text *t);
 
 int lisp_truthy(lisp_value *v);
+
+/* Module stuff */
+lisp_module *create_example_module(lisp_runtime *rt);
 #endif

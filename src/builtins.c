@@ -742,6 +742,45 @@ static lisp_value *lisp_builtin_let(
 	return lisp_progn(rt, new_scope, expressions);
 }
 
+static lisp_value *lisp_builtin_import(
+		lisp_runtime *rt, lisp_scope *scope, lisp_list *arglist, void *user)
+{
+	/*
+	 * args are NOT evaluated
+	 * (import symbol)  ->  looks up module "symbol" and inserts it into
+	 * current scope
+	 */
+	lisp_symbol *sym;
+	lisp_module *mod;
+
+	(void) user; /* unused */
+
+	if (!lisp_get_args(rt, arglist, "s", &sym))
+		return NULL;
+
+	if (strcmp(sym->s, "example") == 0)
+		mod = create_example_module(rt);
+	else
+		return lisp_error(rt, LE_NOTFOUND, "module not found");
+
+	lisp_scope_bind(scope, sym, (lisp_value*)mod);
+	return (lisp_value*)mod;
+}
+
+static lisp_value *lisp_builtin_getattr(
+		lisp_runtime *rt, lisp_scope *scope, lisp_list *arglist, void *user)
+{
+	lisp_module *mod;
+	lisp_symbol *sym;
+
+	(void) user;
+
+	if (!lisp_get_args(rt, arglist, "*s", &mod, &sym))
+		return NULL;
+
+	return lisp_scope_lookup(rt, mod->contents, sym);
+}
+
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
 	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval, NULL, 1);
@@ -779,4 +818,6 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "cond", lisp_builtin_cond, NULL, 0);
 	lisp_scope_add_builtin(rt, scope, "list", lisp_builtin_list, NULL, 1);
 	lisp_scope_add_builtin(rt, scope, "let", lisp_builtin_let, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "import", lisp_builtin_import, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "getattr", lisp_builtin_getattr, NULL, 1);
 }
