@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdarg.h>
 
 #include "iter.h"
 
@@ -94,7 +95,7 @@ struct iterator iterator_concat2(struct iterator left, struct iterator right)
 }
 
 struct iterator iterator_concat3(struct iterator a, struct iterator b,
-																 struct iterator c)
+				 struct iterator c)
 {
 	struct iterator *arr = calloc(sizeof(struct iterator), 3);
 	arr[0] = a;
@@ -123,4 +124,47 @@ struct iterator iterator_empty()
 	it.has_next=empty_has_next;
 	it.close=iterator_close_noop;
 	return it;
+}
+
+static bool array_has_next(struct iterator *iter)
+{
+	return iter->index < iter->state_int;
+}
+
+static void *array_next(struct iterator *iter)
+{
+	return ((void**)iter->ds)[iter->index++];
+}
+
+static void array_close(struct iterator *iter)
+{
+	if ((bool) iter->state_ptr)
+		free(iter->ds);
+}
+
+struct iterator iterator_array(void **array, int len, bool own)
+{
+	struct iterator it = {0};
+	it.index = 0;
+	it.ds = array;
+	it.state_int = len;
+	it.state_ptr = (void*) own;
+	it.has_next = array_has_next;
+	it.next = array_next;
+	it.close = array_close;
+	return it;
+}
+
+struct iterator iterator_from_args(int n, ...)
+{
+	void **array = calloc(sizeof(void*), n);
+	va_list va;
+	int i;
+
+	va_start(va, n);
+	for (i = 0; i < n; i++)
+		array[i] = va_arg(va, void*);
+	va_end(va);
+
+	return iterator_array(array, n, true);
 }
