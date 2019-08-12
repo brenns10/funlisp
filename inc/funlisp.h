@@ -197,6 +197,12 @@ typedef struct lisp_lambda lisp_lambda;
 typedef struct lisp_list lisp_list;
 
 /**
+ * Data structure representing a module.
+ * @ingroup types
+ */
+typedef struct lisp_module lisp_module;
+
+/**
  * @defgroup value Lisp Values
  * @{
  */
@@ -506,6 +512,11 @@ extern lisp_type *type_builtin;
  * @sa lisp_is()
  */
 extern lisp_type *type_lambda;
+
+/**
+ * Type object of ::lisp_module
+ */
+extern lisp_type *type_module;
 
 /**
  * Flag instructing string/symbol creation routines that they should copy the

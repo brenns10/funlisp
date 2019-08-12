@@ -795,3 +795,60 @@ int lisp_compare(lisp_value *self, lisp_value *other)
 {
 	return self->type->compare(self, other);
 }
+
+/*
+ * module
+ */
+
+static void module_print(FILE *f, lisp_value*v);
+static lisp_value *module_new(lisp_runtime *rt);
+static struct iterator module_expand(lisp_value *);
+static int module_compare(lisp_value *self, lisp_value *other);
+
+static lisp_type type_module_obj = {
+	TYPE_HEADER,
+	/* name */ "module",
+	/* print */ module_print,
+	/* new */ module_new,
+	/* free */ simple_free,
+	/* expand */ module_expand,
+	/* eval */ eval_error,
+	/* call */ call_error,
+	/* compare */ module_compare,
+};
+lisp_type *type_module = &type_module_obj;
+
+static lisp_value *module_new(lisp_runtime *rt)
+{
+	lisp_module *module;
+	(void) rt; /* unused */
+
+	module = malloc(sizeof(lisp_module));
+	module->contents = NULL;
+	module->name = NULL;
+	module->name = NULL;
+	return (lisp_value*)module;
+}
+
+static void module_print(FILE *f, lisp_value *v)
+{
+	lisp_module *module = (lisp_module*) v;
+	fprintf(f, "<module '%s' from '%s' at 0x%p>",
+			module->name->s, module->file->s, (void*)module);
+}
+
+static struct iterator module_expand(lisp_value *v)
+{
+	lisp_module *module = (lisp_module *) v;
+	return iterator_from_args(3,
+		module->name,
+		module->file,
+		module->contents
+	);
+}
+
+static int module_compare(lisp_value *self, lisp_value *other)
+{
+	/* Compare by value for simplicity. */
+	return self == other;
+}

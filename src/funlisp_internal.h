@@ -143,6 +143,13 @@ struct lisp_lambda {
 	int lambda_type;
 };
 
+struct lisp_module {
+	LISP_VALUE_HEAD;
+	lisp_scope *contents;
+	lisp_string *name;
+	lisp_string *file;
+};
+
 /**
  * A function which consumes a single ::lisp_value and produces a new one as a
  * result.
