@@ -175,21 +175,85 @@ static result lisp_parse_list_or_sexp(lisp_runtime *rt, char *input, int index)
 	}
 }
 
+static lisp_value *split_symbol(lisp_runtime *rt, char *string, int dotcount, int remain)
+{
+	char *delim, *tok;
+	int i, len;
+	lisp_value *prev = NULL;
+	lisp_symbol *sym;
+	lisp_list *list;
+	lisp_symbol *getattr = lisp_symbol_new(rt, "getattr", 0);
+
+	/* Create the first symbol, which is the left hand side */
+	delim = strchr(string, '.');
+	len = (int) (delim - string);
+	tok = malloc(len + 1);
+	strncpy(tok, string, len);
+	tok[len] = '\0';
+	sym = lisp_symbol_new(rt, tok, LS_OWN);
+	prev = (lisp_value*) sym;
+	string = delim + 1;
+	remain -= len + 1;
+
+	/* Create a "getattr" for each right hand side remaining */
+	for (i = 0; i < dotcount; i++) {
+		/* Attribute symbol */
+		if (i < dotcount - 1) {
+			delim = strchr(string, '.');
+			len = (int) (delim - string);
+		} else {
+			len = remain;
+		}
+		tok = malloc(len + 1);
+		strncpy(tok, string, len);
+		tok[len] = '\0';
+		sym = lisp_symbol_new(rt, tok, LS_OWN);
+
+		/* Create (getattr PREV 'tok) */
+		list = lisp_list_new(rt,
+			(lisp_value *) getattr,
+			(lisp_value *) lisp_list_new(rt,
+				prev,
+				(lisp_value *) lisp_list_new(rt,
+					(lisp_value *) lisp_quote_with(rt, (lisp_value *) sym, "quote"),
+					lisp_nil_new(rt)
+				)
+			)
+		);
+		prev = (lisp_value *) list;
+		string = delim + 1;
+		remain -= len + 1;
+	}
+	return prev;
+}
+
 static result lisp_parse_symbol(lisp_runtime *rt, char *input, int index)
 {
 	int n = 0;
+	int dotcount = 0;
 	char *copy;
 	lisp_symbol *s;
 
 	while (input[index + n] && !isspace(input[index + n]) &&
-	       input[index + n] != ')' && input[index + n] != '.' &&
+	       input[index + n] != ')' && /* input[index + n] != '.' && */
 	       input[index + n] != '\'' && input[index + n] != COMMENT) {
+		if (input[index + n] == '.')
+			dotcount++;
 		n++;
 	}
 	if (!input[index]) {
 		rt->error = "unexpected eof while parsing symbol";
 		return_result_err(NULL, index, LE_EOF);
 	}
+
+	if (dotcount) {
+		if (input[index] == '.' || input[index + n - 1] == '.') {
+			rt->error = "unexpected '.' at beginning or end of symbol";
+			return_result_err(NULL, index, LE_SYNTAX);
+		}
+		return_result(split_symbol(rt, input + index, dotcount, n), index + n);
+	}
+
 	copy = malloc(n + 1);
 	strncpy(copy, input + index, n);
 	copy[n] = '\0';
