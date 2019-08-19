@@ -758,9 +758,8 @@ static lisp_value *lisp_builtin_import(
 	if (!lisp_get_args(rt, arglist, "s", &sym))
 		return NULL;
 
-	if (strcmp(sym->s, "example") == 0)
-		mod = create_example_module(rt);
-	else
+	mod = lisp_lookup_module(rt, sym);
+	if (!mod)
 		return lisp_error(rt, LE_NOTFOUND, "module not found");
 
 	lisp_scope_bind(scope, sym, (lisp_value*)mod);
@@ -774,6 +773,7 @@ static lisp_value *lisp_builtin_getattr(
 	lisp_symbol *sym;
 
 	(void) user;
+	(void) scope; /* unused */
 
 	if (!lisp_get_args(rt, arglist, "*s", &mod, &sym))
 		return NULL;

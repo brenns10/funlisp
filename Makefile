@@ -40,7 +40,7 @@ bin/example_list_append: tools/example_list_append.o bin/libfunlisp.a
 	$(CC) $(CFLAGS) $^ -o $@
 
 clean: FORCE
-	rm -rf bin/* src/*.o tools/*.o src/*.gcda src/*.gcno
+	rm -rf bin/* {src,tools}/*.{o,gcda,gcno}
 
 # Meant to be run after downloading the source tarball. This has an un-expressed
 # dependency on `man/funlisp.3`, since the source tarball includes generated

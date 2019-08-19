@@ -24,6 +24,10 @@ void lisp_init(lisp_runtime *rt)
 	rt->stack_depth = 0;
 	rt->symcache = NULL;
 	rt->strcache = NULL;
+	rt->modules = ht_create(lisp_text_hash, lisp_text_compare,
+		sizeof(struct lisp_text *), sizeof(struct lisp_module*));
+
+	lisp_register_module(rt, create_example_module(rt));
 }
 
 void lisp_destroy(lisp_runtime *rt)
@@ -36,6 +40,7 @@ void lisp_destroy(lisp_runtime *rt)
 		ht_delete(rt->symcache);
 	if (rt->strcache)
 		ht_delete(rt->strcache);
+	ht_delete(rt->modules);
 }
 
 void lisp_mark(lisp_runtime *rt, lisp_value *v)

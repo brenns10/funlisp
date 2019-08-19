@@ -19,3 +19,13 @@ lisp_module *create_example_module(lisp_runtime *rt)
 	build_example_module(rt, m);
 	return m;
 }
+
+void lisp_register_module(lisp_runtime *rt, lisp_module *m)
+{
+	ht_insert_ptr(rt->modules, m->name, m);
+}
+
+lisp_module *lisp_lookup_module(lisp_runtime *rt, lisp_symbol *name)
+{
+	return ht_get_ptr(rt->modules, name);
+}

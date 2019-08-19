@@ -84,6 +84,8 @@ struct lisp_runtime {
 	struct hashtable *symcache;
 	/* Maintain cache of lisp_string */
 	struct hashtable *strcache;
+	/* Maintain builtin module list */
+	struct hashtable *modules;
 };
 
 /* The below ARE lisp_values! */
@@ -196,4 +198,6 @@ int lisp_truthy(lisp_value *v);
 
 /* Module stuff */
 lisp_module *create_example_module(lisp_runtime *rt);
+void lisp_register_module(lisp_runtime *rt, lisp_module *m);
+lisp_module *lisp_lookup_module(lisp_runtime *rt, lisp_symbol *name);
 #endif
