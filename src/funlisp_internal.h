@@ -64,15 +64,15 @@ struct lisp_runtime {
 	/* Data we use for reporting errors. This is very single-threaded of me,
 	 * but it works for now.
 	 * REQUIREMENTS:
-	 *   - error and errno must both always be non-NULL and non-0
+	 *   - error and err_num must both always be non-NULL and non-0
 	 *     respectively when an error occurs
 	 *   - error_line and error_stack may optionally be set
-	 * You can use lisp_error() to set error, errno, and error_stack.
-	 * Parsing functions typically use a macro to set error, errno, and
+	 * You can use lisp_error() to set error, err_num, and error_stack.
+	 * Parsing functions typically use a macro to set error, err_num, and
 	 * error_line.
 	 */
 	char *error;
-	enum lisp_errno errno;
+	enum lisp_errno err_num;
 	unsigned int error_line;
 	lisp_list *error_stack;
 

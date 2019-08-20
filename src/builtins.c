@@ -619,7 +619,7 @@ static lisp_value *lisp_builtin_assert_error(
 	/* args are NOT evaluated, to avoid error handling short circuit */
 	lisp_value *sym, *expr;
 	lisp_symbol *sym_evald;
-	enum lisp_errno errno;
+	enum lisp_errno err_num;
 	(void) user;
 
 	if (!lisp_get_args(rt, arglist, "**", &sym, &expr))
@@ -629,19 +629,19 @@ static lisp_value *lisp_builtin_assert_error(
 	lisp_error_check(sym_evald);
 	if (sym_evald->type != type_symbol)
 		return lisp_error(rt, LE_TYPE, "error type must be symbol");
-	errno = lisp_sym_to_errno(sym_evald);
-	if (errno == LE_MAX_ERR)
+	err_num = lisp_sym_to_errno(sym_evald);
+	if (err_num == LE_MAX_ERR)
 		return lisp_error(rt, LE_VALUE, "unrecognized error type");
 
 	lisp_eval(rt, scope, expr); /* we don't care, cause we expect error */
 	/* NO ERROR CHECK HERE */
 
-	if (errno == lisp_get_errno(rt)) {
+	if (err_num == lisp_get_errno(rt)) {
 		lisp_clear_error(rt);
 		return (lisp_value*) sym_evald;
 	} else {
 		fprintf(stderr, "Assertion error! Expected %s\n",
-			lisp_error_name[errno]);
+			lisp_error_name[err_num]);
 		fprintf(stderr, "This was the actual error encountered: ");
 		lisp_print_error(rt, stderr);
 		fprintf(stderr, "\nBelow should be the assertion error stack trace.\n");

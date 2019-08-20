@@ -327,7 +327,7 @@ int lisp_parse_value(lisp_runtime *rt, char *input, int index, lisp_value **outp
 	result r = lisp_parse_value_internal(rt, input, index);
 	bytes = r.index - index;
 	if (r.error) {
-		rt->errno = r.error;
+		rt->err_num = r.error;
 		set_error_lineno(rt, input, r.index);
 		bytes = -1;
 	}
@@ -391,7 +391,7 @@ lisp_value *lisp_parse_progn_f(lisp_runtime *rt, FILE *input)
 	input_string = read_file(input);
 	if (!input_string) {
 		rt->error = "error reading from input file";
-		rt->errno = LE_FERROR;
+		rt->err_num = LE_FERROR;
 		return NULL;
 	}
 	result = lisp_parse_progn(rt, input_string);

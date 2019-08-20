@@ -894,11 +894,11 @@ extern const char *lisp_error_name[LE_MAX_ERR];
  * @endcode
  *
  * @param rt runtime
- * @param errno error number, for easy programatic acccess
+ * @param err_num error number, for easy programatic acccess
  * @param message message to show the user
  * @return NULL
  */
-lisp_value *lisp_error(lisp_runtime *rt, enum lisp_errno errno, char *message);
+lisp_value *lisp_error(lisp_runtime *rt, enum lisp_errno err_num, char *message);
 
 /**
  * Dump the execution stack to a file. This is useful if you want to print a

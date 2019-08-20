@@ -182,7 +182,7 @@ int lisp_get_args(lisp_runtime *rt, lisp_list *list, char *format, ...)
 		type = lisp_get_type(*format);
 		if (type != NULL && type != list->left->type) {
 			rt->error = "incorrect argument type";
-			rt->errno = LE_TYPE;
+			rt->err_num = LE_TYPE;
 			return 0;
 		}
 		*v = list->left;
@@ -191,11 +191,11 @@ int lisp_get_args(lisp_runtime *rt, lisp_list *list, char *format, ...)
 	}
 	if (*format != '\0') {
 		rt->error = "not enough arguments";
-		rt->errno = LE_2FEW;
+		rt->err_num = LE_2FEW;
 		return 0;
 	} else if(!lisp_nil_p((lisp_value*)list)) {
 		rt->error = "too many arguments";
-		rt->errno = LE_2MANY;
+		rt->err_num = LE_2MANY;
 		return 0;
 	}
 	return 1;
@@ -386,10 +386,10 @@ void lisp_dump_stack(lisp_runtime *rt, lisp_list *stack, FILE *file)
 	}
 }
 
-lisp_value *lisp_error(lisp_runtime *rt, enum lisp_errno errno, char *message)
+lisp_value *lisp_error(lisp_runtime *rt, enum lisp_errno err_num, char *message)
 {
 	rt->error = message;
-	rt->errno = errno;
+	rt->err_num = err_num;
 	rt->error_stack = rt->stack;
 	return NULL;
 }
@@ -401,7 +401,7 @@ char *lisp_get_error(lisp_runtime *rt)
 
 enum lisp_errno lisp_get_errno(lisp_runtime *rt)
 {
-	return rt->errno;
+	return rt->err_num;
 }
 
 void lisp_clear_error(lisp_runtime *rt)
@@ -409,7 +409,7 @@ void lisp_clear_error(lisp_runtime *rt)
 	rt->error = NULL;
 	rt->error_stack = NULL;
 	rt->error_line = 0;
-	rt->errno = 0;
+	rt->err_num = 0;
 }
 
 void lisp_print_error(lisp_runtime *rt, FILE *file)
@@ -423,12 +423,12 @@ void lisp_print_error(lisp_runtime *rt, FILE *file)
 	if (rt->error_line)
 		fprintf(file, "at line %d: ", rt->error_line);
 
-	if (rt->errno == LE_ERRNO) {
+	if (rt->err_num == LE_ERRNO) {
 		errmsg = strerror(get_errno());
 		fprintf(file, "Error %s: %s\nSystem error: %s\n",
-			lisp_error_name[rt->errno], rt->error, errmsg);
+			lisp_error_name[rt->err_num], rt->error, errmsg);
 	} else {
-		fprintf(file, "Error %s: %s\n", lisp_error_name[rt->errno], rt->error);
+		fprintf(file, "Error %s: %s\n", lisp_error_name[rt->err_num], rt->error);
 	}
 
 	if (rt->error_stack)
