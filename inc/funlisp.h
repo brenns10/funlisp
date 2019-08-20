@@ -875,6 +875,7 @@ enum lisp_errno {
 	LE_EXIT,     /* exit the interpreter */
 	LE_ASSERT,   /* assertion error */
 	LE_VALUE,    /* invalid argument */
+	LE_ERRNO,    /* used for C library errors, does perror() */
 
 	LE_MAX_ERR   /* not a real error, don't use */
 };

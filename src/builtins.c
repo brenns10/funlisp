@@ -758,9 +758,8 @@ static lisp_value *lisp_builtin_import(
 	if (!lisp_get_args(rt, arglist, "s", &sym))
 		return NULL;
 
-	mod = lisp_lookup_module(rt, sym);
-	if (!mod)
-		return lisp_error(rt, LE_NOTFOUND, "module not found");
+	mod = lisp_do_import(rt, sym);
+	lisp_error_check(mod);
 
 	lisp_scope_bind(scope, sym, (lisp_value*)mod);
 	return (lisp_value*)mod;

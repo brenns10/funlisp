@@ -179,7 +179,7 @@ static struct iterator scope_expand(lisp_value *v)
 	lisp_scope *scope = (lisp_scope *) v;
 	if (scope->up) {
 		return iterator_concat3(
-			iterator_single_value(&scope->up),
+			iterator_single_value(scope->up),
 			ht_iter_keys_ptr(&scope->scope),
 			ht_iter_values_ptr(&scope->scope)
 		);

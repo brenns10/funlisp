@@ -1,6 +1,7 @@
 builtins.o: src/builtins.c src/funlisp_internal.h inc/funlisp.h \
  src/iter.h src/ringbuf.h src/hashtable.h
 charbuf.o: src/charbuf.c src/charbuf.h
+en.o: src/en.c
 gc.o: src/gc.c src/funlisp_internal.h inc/funlisp.h src/iter.h \
  src/ringbuf.h src/hashtable.h
 hashtable.o: src/hashtable.c src/iter.h src/hashtable.h

@@ -33,6 +33,7 @@ const char *lisp_error_name[LE_MAX_ERR] = {
 	"LE_EXIT",
 	"LE_ASSERT",
 	"LE_VALUE",
+	"LE_ERRNO",
 };
 
 void lisp_scope_bind(lisp_scope *scope, lisp_symbol *symbol, lisp_value *value)
@@ -413,6 +414,7 @@ void lisp_clear_error(lisp_runtime *rt)
 
 void lisp_print_error(lisp_runtime *rt, FILE *file)
 {
+	char *errmsg;
 	if (!rt->error) {
 		fprintf(stderr, "BUG: lisp_print_error() expects error, found none\n");
 		return;
@@ -421,7 +423,13 @@ void lisp_print_error(lisp_runtime *rt, FILE *file)
 	if (rt->error_line)
 		fprintf(file, "at line %d: ", rt->error_line);
 
-	fprintf(file, "Error %s: %s\n", lisp_error_name[rt->errno], rt->error);
+	if (rt->errno == LE_ERRNO) {
+		errmsg = strerror(get_errno());
+		fprintf(file, "Error %s: %s\nSystem error: %s\n",
+			lisp_error_name[rt->errno], rt->error, errmsg);
+	} else {
+		fprintf(file, "Error %s: %s\n", lisp_error_name[rt->errno], rt->error);
+	}
 
 	if (rt->error_stack)
 		lisp_dump_stack(rt, rt->error_stack, file);

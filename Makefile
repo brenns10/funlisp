@@ -7,7 +7,7 @@ include Makefile.conf
 
 OBJS=src/builtins.o src/charbuf.o src/gc.o src/hashtable.o src/iter.o \
      src/parse.o src/ringbuf.o src/types.o src/util.o src/textcache.o \
-     src/module.o
+     src/module.o src/en.o
 
 # https://semver.org
 VERSION=1.1.0
@@ -83,7 +83,7 @@ doc: FORCE
 
 test: all FORCE
 	rm -f cov*.html src/*.gcda
-	@python test.py scripts/tests
+	@cd scripts && python ../test.py tests -r ../bin/funlisp
 	gcovr -r src --html --html-details -o cov.html
 
 clean_doc:
