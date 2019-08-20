@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "funlisp_internal.h"
 #include "hashtable.h"
@@ -424,7 +425,7 @@ void lisp_print_error(lisp_runtime *rt, FILE *file)
 		fprintf(file, "at line %d: ", rt->error_line);
 
 	if (rt->err_num == LE_ERRNO) {
-		errmsg = strerror(get_errno());
+		errmsg = strerror(errno);
 		fprintf(file, "Error %s: %s\nSystem error: %s\n",
 			lisp_error_name[rt->err_num], rt->error, errmsg);
 	} else {
