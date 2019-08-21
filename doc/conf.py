@@ -26,11 +26,11 @@ if read_the_docs_build:
 # -- Project information -----------------------------------------------------
 
 project = 'funlisp'
-copyright = '2018, Stephen Brennan'
+copyright = '2018-2019, Stephen Brennan'
 author = 'Stephen Brennan'
 
 # The short X.Y version
-version = ''
+version = '1.2.0'
 # The full version, including alpha/beta/rc tags
 release = ''
 

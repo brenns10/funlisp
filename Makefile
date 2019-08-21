@@ -10,7 +10,7 @@ OBJS=src/builtins.o src/charbuf.o src/gc.o src/hashtable.o src/iter.o \
      src/module.o
 
 # https://semver.org
-VERSION=1.1.0
+VERSION=1.2.0
 
 all: bin/libfunlisp.a bin/funlisp bin/repl bin/hello_repl bin/runfile \
  bin/call_lisp FORCE

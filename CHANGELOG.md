@@ -15,8 +15,64 @@ project uses [Semantic Versioning](https://semver.org) in the following ways:
   SemVer.
 
 ## Unreleased
+
+## [1.2.0] 2019-08-20
+
+After nearly a year without updates, Funlisp v1.2.0 is released!  This release
+brings several new language features and API additions. On top of that, I've
+moved the main development Git host to
+[Sourcehut](https://git.sr.ht/~brenns10/funlisp/), although the GitHub
+repository will continue to act as a mirror. Releases will still have to be
+found on GitHub, since Sourcehut does not have a suitable system for that yet.
+
+In a similar vein, we now have a mailing list,
+`~brenns10/funlisp-dev@lists.sr.ht`. This will contain version announcements,
+and any patches are welcome to be submitted there! For docs on using the list,
+see [Sourcehut manual](https://man.sr.ht/lists.sr.ht/). TLDR:
+
+- Email `~brenns10/funlisp-dev+subscribe@lists.sr.ht` with any subject/content
+  in order to subscribe.
+- Email `~brenns10/funlisp-dev+unsubscribe@lists.sr.ht` to unsubscribe.
+
+You may notice some test posts on the list -- no more will be posted, so it is
+safe to subscribe if you're interested.  You need not be a member of Sourcehut
+to use the list, submit patches, or browse the repository.
+
 ### Added
-- `let` builtin
+
+- `let` statement for binding names to values. Sample usage:
+
+      (define sum-of-squares (lambda (x y)
+        (let ((x_sq (* x x))
+              (y_sq (* y y)))
+             (+ x_sq y_sq))))
+
+      (sum-of-squares 3 4)
+      -> 25
+
+- `cond` statement for multi-case conditionals. Sample usage:
+
+      (define get-maintainer (lambda (file)
+        (cond
+          ((eq? file "Makefile") "Stephen")
+          ((eq? file "inc/funlisp.h") "Stephen")
+          (1 "Stephen"))))
+
+- Documentation for the `macro` statement which existed in 1.1 is now present on
+  the documentation site + manual page.
+
+- Modules!
+  - Use `(import module)` to either load the builtin "module" or read
+    "module.lisp" and access its defined symbols.
+  - C API for creating builtin modules exists, and is documented.
+  - First module, `os`, containing `getenv` function, is created. I have not yet
+    figured out a solid standard library documentation system, so consider the
+    builtin modules and their functions to be provisional.
+
+      (import os)
+      (os.getenv "HOME")
+      -> "/home/stephen"
+
 ### Fixed
 - `macro` construct was incorrectly evaluating its arguments prior to execution.
   This change is breaking, but since it reflects major incorrect behavior, it
