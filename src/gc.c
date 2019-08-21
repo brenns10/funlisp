@@ -24,6 +24,9 @@ void lisp_init(lisp_runtime *rt)
 	rt->stack_depth = 0;
 	rt->symcache = NULL;
 	rt->strcache = NULL;
+	rt->modules = lisp_new_empty_scope(rt);
+
+	lisp_register_module(rt, create_os_module(rt));
 }
 
 void lisp_destroy(lisp_runtime *rt)
@@ -70,6 +73,7 @@ static void lisp_mark_basics(lisp_runtime *rt)
 	if (rt->error_stack)
 		lisp_mark(rt, (lisp_value *) rt->error_stack);
 	lisp_mark(rt, (lisp_value *) rt->stack);
+	lisp_mark(rt, (lisp_value *) rt->modules);
 }
 
 void lisp_sweep(lisp_runtime *rt)

@@ -39,6 +39,12 @@ Builtin Functions
 .. doxygengroup:: builtins
    :content-only:
 
+Modules
+-------
+
+.. doxygengroup:: modules
+   :content-only:
+
 Embedding Tools
 ---------------
 

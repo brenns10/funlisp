@@ -36,4 +36,8 @@ struct iterator iterator_concat2(struct iterator left, struct iterator right);
 struct iterator iterator_concat3(
 	struct iterator a, struct iterator b, struct iterator c);
 
+/* return an iterator that yields an array */
+struct iterator iterator_array(void **array, int len, bool own);
+struct iterator iterator_from_args(int n, ...);
+
 #endif

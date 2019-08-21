@@ -6,7 +6,8 @@
 include Makefile.conf
 
 OBJS=src/builtins.o src/charbuf.o src/gc.o src/hashtable.o src/iter.o \
-     src/parse.o src/ringbuf.o src/types.o src/util.o src/textcache.o
+     src/parse.o src/ringbuf.o src/types.o src/util.o src/textcache.o \
+     src/module.o
 
 # https://semver.org
 VERSION=1.1.0
@@ -39,7 +40,7 @@ bin/example_list_append: tools/example_list_append.o bin/libfunlisp.a
 	$(CC) $(CFLAGS) $^ -o $@
 
 clean: FORCE
-	rm -rf bin/* src/*.o tools/*.o src/*.gcda src/*.gcno
+	rm -rf bin/* {src,tools}/*.{o,gcda,gcno}
 
 # Meant to be run after downloading the source tarball. This has an un-expressed
 # dependency on `man/funlisp.3`, since the source tarball includes generated
@@ -82,7 +83,7 @@ doc: FORCE
 
 test: all FORCE
 	rm -f cov*.html src/*.gcda
-	@python test.py scripts/tests
+	@cd scripts && python ../test.py tests -r ../bin/funlisp
 	gcovr -r src --html --html-details -o cov.html
 
 clean_doc:
@@ -103,7 +104,7 @@ package: FORCE clean doc
 		inc/*.h src/*.c src/*.h tools/*.c scripts/*.lisp bin/.gitkeep
 
 serve_doc: doc
-	cd doc/_build/html; python -m http.server --bind 0.0.0.0 8080
+	cd html; python -m http.server --bind 0.0.0.0 8080
 
 # Named differently from Makefile.dep to avoid implicit rules for inclusion.
 depend: FORCE

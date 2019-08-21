@@ -64,15 +64,15 @@ struct lisp_runtime {
 	/* Data we use for reporting errors. This is very single-threaded of me,
 	 * but it works for now.
 	 * REQUIREMENTS:
-	 *   - error and errno must both always be non-NULL and non-0
+	 *   - error and err_num must both always be non-NULL and non-0
 	 *     respectively when an error occurs
 	 *   - error_line and error_stack may optionally be set
-	 * You can use lisp_error() to set error, errno, and error_stack.
-	 * Parsing functions typically use a macro to set error, errno, and
+	 * You can use lisp_error() to set error, err_num, and error_stack.
+	 * Parsing functions typically use a macro to set error, err_num, and
 	 * error_line.
 	 */
 	char *error;
-	enum lisp_errno errno;
+	enum lisp_errno err_num;
 	unsigned int error_line;
 	lisp_list *error_stack;
 
@@ -84,6 +84,8 @@ struct lisp_runtime {
 	struct hashtable *symcache;
 	/* Maintain cache of lisp_string */
 	struct hashtable *strcache;
+	/* Maintain builtin module list */
+	lisp_scope *modules;
 };
 
 /* The below ARE lisp_values! */
@@ -143,6 +145,13 @@ struct lisp_lambda {
 	int lambda_type;
 };
 
+struct lisp_module {
+	LISP_VALUE_HEAD;
+	lisp_scope *contents;
+	lisp_string *name;
+	lisp_string *file;
+};
+
 /**
  * A function which consumes a single ::lisp_value and produces a new one as a
  * result.
@@ -186,4 +195,8 @@ int lisp_text_compare(void *left, void *right);
 void lisp_textcache_remove(struct hashtable *cache, struct lisp_text *t);
 
 int lisp_truthy(lisp_value *v);
+
+lisp_module *create_os_module(lisp_runtime *rt);
+lisp_module *lisp_lookup_module(lisp_runtime *rt, lisp_symbol *name);
+
 #endif

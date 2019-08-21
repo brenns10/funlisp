@@ -619,7 +619,7 @@ static lisp_value *lisp_builtin_assert_error(
 	/* args are NOT evaluated, to avoid error handling short circuit */
 	lisp_value *sym, *expr;
 	lisp_symbol *sym_evald;
-	enum lisp_errno errno;
+	enum lisp_errno err_num;
 	(void) user;
 
 	if (!lisp_get_args(rt, arglist, "**", &sym, &expr))
@@ -629,19 +629,19 @@ static lisp_value *lisp_builtin_assert_error(
 	lisp_error_check(sym_evald);
 	if (sym_evald->type != type_symbol)
 		return lisp_error(rt, LE_TYPE, "error type must be symbol");
-	errno = lisp_sym_to_errno(sym_evald);
-	if (errno == LE_MAX_ERR)
+	err_num = lisp_sym_to_errno(sym_evald);
+	if (err_num == LE_MAX_ERR)
 		return lisp_error(rt, LE_VALUE, "unrecognized error type");
 
 	lisp_eval(rt, scope, expr); /* we don't care, cause we expect error */
 	/* NO ERROR CHECK HERE */
 
-	if (errno == lisp_get_errno(rt)) {
+	if (err_num == lisp_get_errno(rt)) {
 		lisp_clear_error(rt);
 		return (lisp_value*) sym_evald;
 	} else {
 		fprintf(stderr, "Assertion error! Expected %s\n",
-			lisp_error_name[errno]);
+			lisp_error_name[err_num]);
 		fprintf(stderr, "This was the actual error encountered: ");
 		lisp_print_error(rt, stderr);
 		fprintf(stderr, "\nBelow should be the assertion error stack trace.\n");
@@ -742,6 +742,44 @@ static lisp_value *lisp_builtin_let(
 	return lisp_progn(rt, new_scope, expressions);
 }
 
+static lisp_value *lisp_builtin_import(
+		lisp_runtime *rt, lisp_scope *scope, lisp_list *arglist, void *user)
+{
+	/*
+	 * args are NOT evaluated
+	 * (import symbol)  ->  looks up module "symbol" and inserts it into
+	 * current scope
+	 */
+	lisp_symbol *sym;
+	lisp_module *mod;
+
+	(void) user; /* unused */
+
+	if (!lisp_get_args(rt, arglist, "s", &sym))
+		return NULL;
+
+	mod = lisp_do_import(rt, sym);
+	lisp_error_check(mod);
+
+	lisp_scope_bind(scope, sym, (lisp_value*)mod);
+	return (lisp_value*)mod;
+}
+
+static lisp_value *lisp_builtin_getattr(
+		lisp_runtime *rt, lisp_scope *scope, lisp_list *arglist, void *user)
+{
+	lisp_module *mod;
+	lisp_symbol *sym;
+
+	(void) user;
+	(void) scope; /* unused */
+
+	if (!lisp_get_args(rt, arglist, "*s", &mod, &sym))
+		return NULL;
+
+	return lisp_scope_lookup(rt, mod->contents, sym);
+}
+
 void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 {
 	lisp_scope_add_builtin(rt, scope, "eval", lisp_builtin_eval, NULL, 1);
@@ -779,4 +817,6 @@ void lisp_scope_populate_builtins(lisp_runtime *rt, lisp_scope *scope)
 	lisp_scope_add_builtin(rt, scope, "cond", lisp_builtin_cond, NULL, 0);
 	lisp_scope_add_builtin(rt, scope, "list", lisp_builtin_list, NULL, 1);
 	lisp_scope_add_builtin(rt, scope, "let", lisp_builtin_let, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "import", lisp_builtin_import, NULL, 0);
+	lisp_scope_add_builtin(rt, scope, "getattr", lisp_builtin_getattr, NULL, 1);
 }
