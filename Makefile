@@ -104,7 +104,7 @@ package: FORCE clean doc
 		inc/*.h src/*.c src/*.h tools/*.c scripts/*.lisp bin/.gitkeep
 
 serve_doc: doc
-	cd doc/_build/html; python -m http.server --bind 0.0.0.0 8080
+	cd html; python -m http.server --bind 0.0.0.0 8080
 
 # Named differently from Makefile.dep to avoid implicit rules for inclusion.
 depend: FORCE
