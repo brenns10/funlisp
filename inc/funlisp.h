@@ -724,6 +724,76 @@ int lisp_get_args(lisp_runtime *rt, lisp_list *list, char *format, ...);
 
 /**
  * @}
+ * @defgroup modules Modules
+ * @{
+ */
+
+/**
+ * @brief Create a new, empty module object.
+ *
+ * The module object represents a separate namespace which can contain symbols
+ * mapped to builtins, lambdas, constants, and more. It is a great place to
+ * store related functionality. The module can represent all of the symbols
+ * defined in a single lisp file. It can also represent a collection of
+ * resources created by C code.
+ *
+ * C code which wishes to create a module should start here, access the scope
+ * from the resulting module using lisp_module_get_scope(), and populate the
+ * scope with any builtins or other data necessary. Finally, modules should be
+ * registered with the runtime using lisp_register_module().
+ *
+ * @param rt runtime
+ * @param name the name of the module, used for imports
+ * @param file filename for the module object. This file is not actually loaded,
+ * simply stored as part of the module metadata. If you would like to load a
+ * file as a module, see lisp_import_file().
+ * @return a new, empty module object
+ */
+lisp_module *lisp_new_module(lisp_runtime *rt, lisp_string *name, lisp_string *file);
+
+/**
+ * @brief Given a module returned by lisp_new_module(), access its scope
+ * @param module A module to get the scope of
+ * @return the scope of that module
+ */
+lisp_scope *lisp_module_get_scope(lisp_module *module);
+
+/**
+ * @brief Given a module object, register it with the runtime
+ *
+ * The module is mapped using the name given at creation time. For example, if a
+ * module was given the name ``foo``, then it can be imported with the statement
+ * ``(import foo)``.
+ *
+ * @param rt runtime
+ * @param module module to register
+ */
+void lisp_register_module(lisp_runtime *rt, lisp_module *module);
+
+/**
+ * @brief Load a file of lisp code and return it as a module object.
+ * @param name Name for the resulting module
+ * @param file Filename to read and load as a module
+ * @return the resulting module
+ */
+lisp_module *lisp_import_file(lisp_runtime *rt, lisp_string *name, lisp_string *file);
+
+/**
+ * @brief Given a module name, import and return it if possible, or raise error
+ *
+ * This process works as follows. First, check whether an existing module has
+ * already been registered by that name. If so, return it. Second, attempt to
+ * read ``./NAME.lisp`` as a lisp file, and return that as a module. Raise error
+ * on failure.
+ *
+ * @param rt runtime
+ * @param name name of module to import
+ * @return the resulting module
+ */
+lisp_module *lisp_do_import(lisp_runtime *rt, lisp_symbol *name);
+
+/**
+ * @}
  * @defgroup embed Embedding API
  * @{
  */

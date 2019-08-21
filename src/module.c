@@ -26,19 +26,12 @@ static lisp_value *lisp_os_getenv(lisp_runtime *rt, lisp_scope *scope,
 		return lisp_nil_new(rt);
 }
 
-static void build_example_module(lisp_runtime *rt, lisp_module *m)
-{
-	lisp_scope_add_builtin(rt, m->contents, "getenv", lisp_os_getenv, NULL, 1);
-}
-
 lisp_module *create_os_module(lisp_runtime *rt)
 {
-	lisp_module *m = (lisp_module *) lisp_new(rt, type_module);
-	m->name = lisp_string_new(rt, "os", 0);
-	m->file = lisp_string_new(rt, __FILE__, 0);
-	m->contents = lisp_new_empty_scope(rt);
 
-	build_example_module(rt, m);
+	lisp_module *m = lisp_new_module(rt, lisp_string_new(rt, "os", 0),
+		lisp_string_new(rt, __FILE__, 0));
+	lisp_scope_add_builtin(rt, m->contents, "getenv", lisp_os_getenv, NULL, 1);
 	return m;
 }
 
@@ -57,6 +50,20 @@ lisp_module *lisp_lookup_module(lisp_runtime *rt, lisp_symbol *name)
 		lisp_clear_error(rt);
 
 	return m;
+}
+
+lisp_module *lisp_new_module(lisp_runtime *rt, lisp_string *name, lisp_string *file)
+{
+	lisp_module *m = (lisp_module *)lisp_new(rt, type_module);
+	m->name = name;
+	m->file = file;
+	m->contents = lisp_new_empty_scope(rt);
+	return m;
+}
+
+lisp_scope *lisp_module_get_scope(lisp_module *module)
+{
+	return module->contents;
 }
 
 lisp_module *lisp_import_file(lisp_runtime *rt, lisp_string *name, lisp_string *file)

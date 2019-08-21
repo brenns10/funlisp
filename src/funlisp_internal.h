@@ -196,12 +196,7 @@ void lisp_textcache_remove(struct hashtable *cache, struct lisp_text *t);
 
 int lisp_truthy(lisp_value *v);
 
-/* Module stuff, will become public eventually, but for now is private */
 lisp_module *create_os_module(lisp_runtime *rt);
-void lisp_register_module(lisp_runtime *rt, lisp_module *m);
 lisp_module *lisp_lookup_module(lisp_runtime *rt, lisp_symbol *name);
 
-lisp_module *lisp_import_file(lisp_runtime *rt, lisp_string *name, lisp_string *file);
-lisp_module *lisp_do_import(lisp_runtime *rt, lisp_symbol *name);
-int get_errno(void);
 #endif
