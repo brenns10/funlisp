@@ -34,7 +34,7 @@ bin/call_lisp: tools/call_lisp.o bin/libfunlisp.a
 	$(CC) $(CFLAGS) $^ -o $@
 
 bin/funlisp: tools/funlisp.o bin/libfunlisp.a
-	$(CC) $(CFLAGS) -ledit $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ -ledit 
 
 bin/example_list_append: tools/example_list_append.o bin/libfunlisp.a
 	$(CC) $(CFLAGS) $^ -o $@
